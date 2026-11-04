@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\08_IlluminationModelsII",
+    "\\08_IlluminationModelsII\\include",
+    "\\bin",
+    "\\bin\\shaders",
+    "\\deps",
+    "\\deps\\glad",
+    "\\deps\\glad\\MSVC2022",
+    "\\deps\\glad\\MSVC2022\\src",
+    "\\deps\\glad\\MSVC2022\\src\\glad"
+  ],
+  "SelectedNode": "\\deps\\glad\\MSVC2022\\src\\glad\\glad.sln",
+  "PreviewInSolutionExplorer": false
+}
