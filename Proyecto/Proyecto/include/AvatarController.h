@@ -60,6 +60,12 @@ public:
 
     glm::mat4 mGlobalInverse;
 
+    // Transformaciones originales de cada malla (se guardan en el primer Update, antes de modificarlas).
+    // Sirven para anclar piezas rígidas (gorra, regadera) al hueso respetando su posición propia en el archivo.
+    std::vector<glm::mat4> baseNodeT;
+    glm::mat4 invPersonajeBase = glm::mat4(1.0f);   // Inversa de la transformación del cuerpo (malla con huesos)
+    bool baseListo = false;
+
     AvatarController()
         : currentState(AVATAR_IDLE), animTime(0.0f), isWatering(false),
         waterActionTimer(0.0f), charScene(nullptr),
@@ -310,19 +316,32 @@ public:
             glmBoneNormMats[b] = glm::mat3(glmBoneMats[b]);
         }
 
+        if (!baseListo) {
+            baseNodeT.resize(characterModel->meshes.size());
+            for (size_t m = 0; m < characterModel->meshes.size(); ++m) {
+                baseNodeT[m] = characterModel->meshes[m].nodeTransform;
+                if (!baseListo && m < meshDataList.size() && meshDataList[m].hasSkinning) {
+                    invPersonajeBase = glm::inverse(baseNodeT[m]);      // El cuerpo define el espacio en que trabajan los huesos
+                    baseListo = true;
+                }
+            }
+            baseListo = true;
+        }
+
         for (size_t m = 0; m < characterModel->meshes.size(); ++m) {
             auto& mesh = characterModel->meshes[m];
 
             // CORRECCIÓN: Anclaje de objetos rígidos (Gorra y Regadera) usando la matriz Skinning correcta
             if (mesh.nodeName == "Gorra" || mesh.materialName == "Gorra_Azul") {
                 if (boneMapping.find("Cabeza") != boneMapping.end()) {
-                    mesh.nodeTransform = glmBoneMats[boneMapping["Cabeza"]];
+                    mesh.nodeTransform = glmBoneMats[boneMapping["Cabeza"]] * invPersonajeBase * baseNodeT[m];
                 }
                 continue;
             }
             if (mesh.nodeName == "Regadera" || mesh.materialName == "Regadera_Verde") {
                 if (boneMapping.find("Mano.R") != boneMapping.end()) {
-                    mesh.nodeTransform = glmBoneMats[boneMapping["Mano.R"]];
+                    // La regadera trae su propia posición en el archivo (mano derecha): se conserva y se mueve con el hueso
+                    mesh.nodeTransform = glmBoneMats[boneMapping["Mano.R"]] * invPersonajeBase * baseNodeT[m];
                 }
                 continue;
             }

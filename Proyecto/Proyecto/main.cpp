@@ -356,10 +356,10 @@ bool Start()
     if (!texInicio) texInicio = muebles.CargarTextura("../muebles/pantalla_inicio.png");
     MostrarPantallaInicio(true);    // Arranca mostrando los controles con el mouse libre
 
-    std::string charPath = "personaje_estudiante.fbx";
+    std::string charPath = "personaje_estudiante2.fbx";      // Versión con la regadera colocada en la mano
     fCheck = fopen(charPath.c_str(), "rb");
     if (fCheck) { fclose(fCheck); }
-    else { charPath = "../personaje_estudiante.fbx"; }
+    else { charPath = "../personaje_estudiante2.fbx"; }
     characterModel = new Model(charPath, false);
     avatarController.Init(charPath);
 
@@ -490,6 +490,7 @@ bool Update()
     if (deltaTime > 0.1f) deltaTime = 0.1f;
 
     processInput(window);
+    bool personajeCaminando = camera.isMoving;   // UpdatePhysics() reinicia isMoving, así que se guarda antes para animar al personaje
 
     if (casaModel && !pantallaInicio) {
         casaModel->UpdateAnimations(deltaTime);
@@ -500,7 +501,7 @@ bool Update()
     }
 
     if (characterModel && !pantallaInicio) {
-        avatarController.Update(deltaTime, camera.isMoving, characterModel);
+        avatarController.Update(deltaTime, personajeCaminando, characterModel);
     }
 
     if (pantallaInicio) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla
