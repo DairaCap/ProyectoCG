@@ -84,7 +84,7 @@ struct LightSwitch {
 };
 std::vector<LightSwitch> gSwitches;
 
-enum InteractiveType { NONE_TYPE = 0, TYPE_DOOR, TYPE_WINDOW, TYPE_SWITCH, TYPE_FURNITURE, TYPE_PLANT };
+enum InteractiveType { NONE_TYPE = 0, TYPE_DOOR, TYPE_WINDOW, TYPE_SWITCH, TYPE_FURNITURE, TYPE_PLANT, TYPE_CLIP };
 
 struct RayHit {
     InteractiveType type = NONE_TYPE;
@@ -196,6 +196,16 @@ RayHit PerformRaycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float
             closestHit.prompt = "[Click / E] " + muebles.Nombre(i) + ": " + (muebles.grupos[i].abierto ? "CERRAR" : "ABRIR");
         }
     }
+    // Grifo del fregadero (keyframes): tiene prioridad sobre el mueble que lo contiene
+    for (size_t i = 0; i < muebles.clips.size(); ++i) {
+        float d = 0.0f;
+        if (RayIntersectsAABB(rayOrigin, rayDir, muebles.clips[i].caja, closestHit.distance + 1.0f, d)) {
+            closestHit.type = TYPE_CLIP;
+            closestHit.index = i;
+            closestHit.distance = d;
+            closestHit.prompt = "[Click / E] Abrir el grifo";
+        }
+    }
     // Plantas con tarjeta informativa
     for (size_t i = 0; i < muebles.plantas.size(); ++i) {
         float d = 0.0f;
@@ -213,6 +223,10 @@ RayHit PerformRaycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float
 
 void InteractWithHovered()
 {
+    if (currentHit.type == TYPE_CLIP) {
+        muebles.ReproducirClip(currentHit.index);
+        return;
+    }
     if (currentHit.type == TYPE_PLANT) {
         muebles.ToggleTarjeta(currentHit.index);
         return;

@@ -54,8 +54,35 @@ struct PlantaTarjeta {
     float aspecto = 0.45f;  // ancho / alto de la imagen
 };
 
+// Una pista de keyframes: valores (grados o escala) en tiempos fijos, interpolados linealmente
+struct PistaKeyframes {
+    std::string tipo;                           // "rotacion" o "escala"
+    glm::vec3 pivote, eje;
+    std::vector<std::pair<float, float>> claves; // (segundos, valor)
+};
+
+// Movimiento por fórmula (seno) de una pieza: plantas con viento, silla que se balancea
+struct Procedural {
+    std::string tipo;       // "viento" o "balanceo"
+    glm::vec3 pivote;       // Base de la pieza
+    float altura, fase;
+};
+
+// Secuencia por keyframes que se dispara con clic (grifo del fregadero)
+struct ClipKeyframes {
+    std::string nombre;
+    AABB caja;
+    float duracion = 0.0f;
+    bool activo = false;
+    float t = 0.0f;
+};
+
 class Muebles {
 public:
+    std::map<std::string, PistaKeyframes> pistas;     // Por nombre de nodo
+    std::map<std::string, Procedural> procedurales;   // Por nombre de nodo
+    std::vector<ClipKeyframes> clips;
+
     std::vector<PlantaTarjeta> plantas;
     int tarjetaActiva = -1;         // Indice de la planta cuya tarjeta se muestra (-1 = ninguna)
     GLuint tarjetaVAO = 0, tarjetaVBO = 0;
@@ -105,6 +132,30 @@ public:
             pl.textura = CargarImagen(carpeta + "/tarjetas/" + f[1] + ".png", pl.aspecto);
             plantas.push_back(pl);
         }
+        for (auto& f : LeerCSV(carpeta + "/keyframes.csv")) {      // Keyframes del grifo
+            if (f.size() < 10) continue;
+            PistaKeyframes& pk = pistas[f[0]];
+            pk.tipo = f[1];
+            pk.pivote = glm::vec3(std::stof(f[2]), std::stof(f[3]), std::stof(f[4]));
+            pk.eje = glm::vec3(std::stof(f[5]), std::stof(f[6]), std::stof(f[7]));
+            pk.claves.push_back({ std::stof(f[8]), std::stof(f[9]) });
+        }
+        for (auto& f : LeerCSV(carpeta + "/clips.csv")) {
+            if (f.size() < 8) continue;
+            ClipKeyframes c;
+            c.nombre = f[0]; c.duracion = std::stof(f[1]);
+            c.caja = AABB(glm::vec3(std::stof(f[2]), std::stof(f[3]), std::stof(f[4])),
+                          glm::vec3(std::stof(f[5]), std::stof(f[6]), std::stof(f[7])));
+            clips.push_back(c);
+        }
+        for (auto& f : LeerCSV(carpeta + "/procedurales.csv")) {   // Viento en plantas y balanceo de sillas
+            if (f.size() < 7) continue;
+            Procedural pr;
+            pr.tipo = f[1];
+            pr.pivote = glm::vec3(std::stof(f[2]), std::stof(f[3]), std::stof(f[4]));
+            pr.altura = std::stof(f[5]); pr.fase = std::stof(f[6]);
+            procedurales[f[0]] = pr;
+        }
         // Rectangulo unitario (2 triangulos) para dibujar la tarjeta en pantalla
         float quad[] = { 0,0, 1,0, 1,1,  0,0, 1,1, 0,1 };
         glGenVertexArrays(1, &tarjetaVAO);
@@ -136,6 +187,11 @@ public:
             float objetivo = g.abierto ? 1.0f : 0.0f;
             g.progreso += (objetivo - g.progreso) * std::min(dt * 5.0f, 1.0f);
         }
+        for (auto& c : clips) {                     // Avanza la secuencia de keyframes hasta el final
+            if (!c.activo) continue;
+            c.t += dt;
+            if (c.t >= c.duracion) { c.activo = false; c.t = 0.0f; }
+        }
     }
 
     // Texto para mostrar al apuntar (por ejemplo "Closet H1")
@@ -166,9 +222,22 @@ public:
                 transformacion = anim * transformacion;
                 break;
             }
+            auto pk = pistas.find(m.nodeName);                // Keyframes (grifo)
+            if (pk != pistas.end() && !clips.empty() && clips[0].activo)
+                transformacion = MatrizKeyframes(pk->second, clips[0].t) * transformacion;
+            auto pr = procedurales.find(m.nodeName);          // Viento / balanceo (procedural)
+            if (pr != procedurales.end())
+                transformacion = MatrizProcedural(pr->second) * transformacion;
             shader.setMat4("model", transformacion);
             m.Draw(shader);
         }
+    }
+
+    // Dispara la secuencia de keyframes i (si ya corre, no hace nada)
+    void ReproducirClip(size_t i) {
+        if (i >= clips.size() || clips[i].activo) return;
+        clips[i].activo = true; clips[i].t = 0.0f;
+        std::cout << "[Keyframes] " << clips[i].nombre << ": INICIA" << std::endl;
     }
 
     // Muestra la tarjeta de la planta i; si ya estaba abierta, la cierra
@@ -199,6 +268,34 @@ public:
     }
 
 private:
+    // Interpola la pista en el segundo t y arma la matriz (rotación o escala en el pivote)
+    static glm::mat4 MatrizKeyframes(const PistaKeyframes& pk, float t) {
+        const auto& k = pk.claves;
+        float v = k.empty() ? 0.0f : k.front().second;
+        for (size_t i = 0; i + 1 < k.size(); ++i) {
+            if (t >= k[i].first && t <= k[i + 1].first) {
+                float u = (t - k[i].first) / std::max(k[i + 1].first - k[i].first, 1e-5f);
+                v = k[i].second + (k[i + 1].second - k[i].second) * u;     // Interpolación lineal
+                break;
+            }
+            if (t > k[i + 1].first) v = k[i + 1].second;
+        }
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), pk.pivote), Ti = glm::translate(glm::mat4(1.0f), -pk.pivote);
+        if (pk.tipo == "escala")                                           // El chorro se alarga a lo largo del eje vertical
+            return T * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, std::max(v, 0.001f), 1.0f)) * Ti;
+        return T * glm::rotate(glm::mat4(1.0f), glm::radians(v), pk.eje) * Ti;
+    }
+
+    // Movimiento por seno: plantas mecidas por el viento (inclinación leve) y sillas que se balancean
+    glm::mat4 MatrizProcedural(const Procedural& p) const {
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), p.pivote), Ti = glm::translate(glm::mat4(1.0f), -p.pivote);
+        if (p.tipo == "balanceo")
+            return T * glm::rotate(glm::mat4(1.0f), glm::radians(25.0f * std::sin(tiempo * 1.1f + p.fase)), glm::vec3(0, 1, 0)) * Ti;
+        float amp = glm::radians(1.0f + 2.0f * std::min(p.altura, 1.5f));  // Más alta = se mece más
+        return T * glm::rotate(glm::mat4(1.0f), amp * std::sin(tiempo * 1.7f + p.fase), glm::vec3(1, 0, 0))
+                 * glm::rotate(glm::mat4(1.0f), 0.6f * amp * std::sin(tiempo * 1.3f + 2.0f * p.fase), glm::vec3(0, 0, 1)) * Ti;
+    }
+
     static GLuint CargarImagen(const std::string& ruta, float& aspecto) {
         int w, h, c;
         unsigned char* px = stbi_load(ruta.c_str(), &w, &h, &c, 4);       // Siempre RGBA
