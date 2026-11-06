@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\build\\Debug\\mesh.obj",
+            "outputs": [
+                "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\build\\Debug\\mesh.h.obj.dt.module.json",
+                "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\build\\Debug\\mesh.h.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}

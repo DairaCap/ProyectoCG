@@ -1,517 +1,353 @@
-# Arquitectura del Proyecto: Casa Interactiva (Entorno de Videojuego)
+# Arquitectura de Software del Proyecto Final: Casa Interactiva 3D
 
-## 1. Análisis de la Base de Código Existente
-
-### 1.1 Estructura de Prácticas del Curso
-
-El repositorio contiene 14+ prácticas progresivas de OpenGL:
-
-| Práctica | Conceptos Clave | Archivos Relevantes |
-|----------|-----------------|---------------------|
-| **00-01** | Configuración OpenGL, triángulos básicos | `Shader.h`, `Vertex.h`, `Mesh.h` |
-| **02** | Transformaciones Proyección/Viewport | `Camera.h`, `Piramide.h`, `Triangle3D.h` |
-| **03** | Modelado Geométrico (primitivas) | `Cube.h`, `Sphere.h`, `Cylinder.h`, `Cone.h`, `Plane.h` |
-| **04** | Modelado Jerárquico | `hand.png` (ejemplo articulado) |
-| **05** | Carga de Modelos (Assimp) | `model.h`, `animatedmodel.h`, `modelstructs.h` |
-| **06** | Texturizado | `stb_image.h`, texturas diffuse/specular/normal |
-| **07-08** | Modelos de Iluminación (Phong, múltiples luces) | `light.h`, `material.h`, `cubemap.h` |
-| **09-10** | Animación Esquelética | `animatedmodel.h`, bone weights, skinning |
-| **11** | Partículas | `particles.h` |
-| **12** | Espejos/Reflejos | Framebuffers, render-to-texture |
-| **13** | **Picking (Selección por color)** | `15_picking.vs/fs`, color encoding por mesh ID |
-| **14** | Fresnel | Efectos de refracción/reflexión |
-
-### 1.2 Arquitectura Común (Patrón Base)
-
-Todas las prácticas desde la **05** comparten esta arquitectura:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      MAIN.CPP                               │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐  │
-│  │  Start() │ │ Update() │ │ Process  │ │  Callbacks     │  │
-│  │  (Init)  │ │ (Render) │ │ Input()  │ │  (GLFW)        │  │
-│  └──────────┘ └──────────┘ └──────────┘ └────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-          │           │           │              │
-          ▼           ▼           ▼              ▼
-┌──────────────────┐ ┌────────┐ ┌────────┐ ┌────────────┐
-│   SHADER         │ │ CAMERA │ │ MODEL  │ │  LIGHT/    │
-│   (shader_m.h)   │ │        │ │        │ │  MATERIAL  │
-└──────────────────┘ └────────┘ └────────┘ └────────────┘
-          │                                       │
-          ▼                                       ▼
-┌──────────────────┐                    ┌─────────────────┐
-│   MESH           │                    │   CUBEMAP       │
-│   (VAO/VBO/EBO)  │                    │   (Skybox)      │
-└──────────────────┘                    └─────────────────┘
-```
-
-### 1.3 Recursos Disponibles (Assets)
-
-**Modelos FBX en `08_IlluminationModelsII/Proyecto/bin/models/IllumModels/`:**
-- `House02.fbx`, `House03.fbx` - Casas completas
-- `Door.fbx` - Puerta independiente (animable)
-- `KAYA.fbx` - Personaje animado (rigged)
-- `Sphere.fbx`, `Table02.fbx`, `grid.fbx`, `plane.fbx`, `lightDummy.fbx`, `moon.fbx`
-- `character.fbx`, `cube.fbx`, `floor.fbx`, `mycube.fbx`
-
-**Texturas:** Madera, hierba, techo, normales, specular maps
-
-**Shaders en `bin/shaders/`:**
-- Phong multi-luces (`11_PhongShaderMultLights`)
-- Skinning/Animación (`09_10_vertex_skinning`, `10_fragment_skinning-IT`)
-- **Picking** (`15_picking.vs/fs`) - **Clave para interacción**
-- Cubemap/Skybox (`10_vertex_cubemap`, `10_fragment_cubemap`)
-- Procedural/Waves (`12_ProceduralAnimation`, `13_wavesAnimation`)
-- Fresnel (`11_Fresnel`), Mirror (`14_mirror`)
+> **Asignatura:** Computación Gráfica e Interacción Humano-Computadora  
+> **Semestre:** 2027-1 | Facultad de Ingeniería, UNAM  
+> **Profesor:** Dr. Sergio Teodoro Vite  
+> **Alineación:** Especificaciones del Proyecto Final + Anteproyecto + Prácticas de Laboratorio (00 a 14)
 
 ---
 
-## 2. Objetivos del Proyecto: Casa Interactiva
+## 1. Mapeo y Trazabilidad con las Prácticas del Curso
 
-### 2.1 Visión General
-Crear un **entorno de videojuego en primera persona** donde el jugador pueda:
-- **Recorrer** la casa libremente (navegación FPS)
-- **Interactuar con interruptores** (encender/apagar luces)
-- **Abrir/cerrar puertas y ventanas** (animaciones)
-- **Hacer click sobre objetos** (picking/selección)
-- **Agarrar, mover y soltar objetos** (física básica / kinematics)
+Para garantizar compatibilidad técnica absoluta y evitar la invención de dependencias o estructuras ajenas al curso, el proyecto reutiliza estrictamente el ecosistema de código, bibliotecas (`deps/`), shaders (`bin/shaders/`) y assets (`bin/models/`, `bin/textures/`) desarrollados en las 14 prácticas:
 
-### 2.2 Alcance Mínimo Viable (MVP)
-1. **Navegación FPS** - Cámara primera persona con colisiones básicas
-2. **Sistema de Picking** - Selección de objetos por click (ya implementado en práctica 13)
-3. **Interacción con Puertas** - Click → animación abrir/cerrar
-4. **Interruptores de Luz** - Click → toggle luz puntual + feedback visual
-5. **Ventanas** - Click → animación abrir/cerrar (rotación/traslación)
-6. **Agarrar objetos** - Click sostenido → attach a cámara → soltar → drop
-
-### 2.3 Características Avanzadas (Stretch Goals)
-- Inventario simple (tecla `TAB` / `I`)
-- Física básica (gravedad al soltar objetos)
-- Sonidos (irrKlang ya integrado)
-- Partículas (polvo al abrir puertas, chispas en interruptores)
-- Reflejos en espejos/ventanas (práctica 12)
-- Estado persistente (guardar/cargar posición de objetos)
+| Práctica / Módulo del Curso | Componente o Técnica en Práctica | Aplicación en la Arquitectura de la Casa Interactiva | Shaders / Clases Reutilizadas del Repositorio |
+|---|---|---|---|
+| **00 & 01 - Setup / Pipeline** | GLAD, GLFW, Contexto OpenGL 3.3 Core Profile, VBO/VAO/EBO | Ventana, contexto, configuración de depth buffer, viewport y ciclo principal | `glad/glad.h`, `GLFW/glfw3.h`, `Shader.h` / `shader_m.h` |
+| **02 - Viewport & Proyecciones** | `Camera.h` (cámara libre / FPS en primera persona) | **Cámara 1:** Primera Persona (FPS) con navegación dentro de la casa | `camera.h` (`ProcessKeyboard`, `ProcessMouseMovement`, `Zoom`) |
+| **03 - Primitivas & 04 - Jerárquico** | Primitivas (`Cube.h`, `Sphere.h`, etc.) y jerarquías matriciales con GLM | Colisiones geométricas simples (AABB) y articulación jerárquica de puertas/ventanas | Transformaciones locales respecto a pivote de bisagra (`glm::rotate`, `glm::translate`) |
+| **05 - Model Loading** | `model.h`, `mesh.h`, `modelstructs.h`, Assimp v5.0 | Carga de la casa (`House02.fbx` / `House03.fbx`), puertas, mobiliario y accesorios | `Model::Draw(Shader&)`, `Mesh`, estructuras de vértices |
+| **06 - Texturizado** | `stb_image.h`, mapas diffuse, specular y normal | Mapeo UV de maderas, muros, techos, suelos y detalles decorativos | `stb_image.cpp`, texturas 2D en slots `GL_TEXTURE0`, etc. |
+| **07 & 08 - Iluminación** | Phong con múltiples fuentes de luz (`Light`, `Material`) | Iluminación de habitaciones: luces direccionales (sol/luna), puntuales (focos de techo/lámparas) | `light.h`, `material.h`, `11_PhongShaderMultLights.vs/fs`, `10_fragment_simpleLights.fs` |
+| **09 & 10 - Animación** | `AnimatedModel` (skeletal skinning) y cámara en 3ª persona | **Cámara 2:** Tercera Persona orbitando a avatar (`KAYA.fbx`) recorriendo la casa; animaciones de puertas | `animatedmodel.h`, `10_vertex_skinning-IT.vs/fs`, `camera3rd` vinculada al personaje |
+| **11 - Partículas** | `particles.h`, texturas con alpha blending (`GL_BLEND`) | Efectos de ambiente: polvo en habitaciones, humo de chimenea o lluvia/nieve exterior | `particles.h`, `13_particles.vs/fs` |
+| **12 - Espejos / FBO** | Framebuffer Object (render-to-texture), plano de reflexión | Espejo del baño o vestidor reflejando la habitación | `14_mirror.vs/fs`, textura de reflexión FBO |
+| **13 - Picking** | Selección por color codificado en 24-bit (`glReadPixels`) | **Motor de Interacción:** Identificación de interruptores, puertas, ventanas y objetos | `15_picking.vs/fs`, `IDforPicking` en cada `Model` |
+| **14 - Fresnel** | Reflexión/Refracción dieléctrica con Cubemap | Materiales traslúcidos (cristales de ventanas, peceras) y metales (grifos, manijas) | `11_Fresnel.vs/fs`, `mRefractionRatio`, `_Bias`, `_Scale`, `_Power` |
+| **Ambiente & Audio** | `CubeMap` (Skybox 6 caras) y motor de audio irrKlang | Cielo diurno/nocturno (`cubemap.h`) y audio espacial 3D/2D para puertas, interruptores y pasos | `cubemap.h`, `10_vertex_cubemap.vs/fs`, `irrKlang.h` (`ISoundEngine`) |
 
 ---
 
-## 3. Arquitectura Propuesta
+## 2. Cumplimiento de Especificaciones y Rúbrica Oficial (2027-1)
 
-### 3.1 Diagrama de Alto Nivel
+El diseño arquitectónico atiende al 100% de los criterios de la rúbrica oficial evaluada sobre 10 puntos:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           INTERACTIVE HOUSE ENGINE                          │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────┐  │
-│  │   INPUT      │    │   GAME       │    │   RENDER     │    │  AUDIO   │  │
-│  │   MANAGER    │───▶│   LOGIC      │───▶│   SYSTEM     │    │  SYSTEM  │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘    └──────────┘  │
-│         │                    │                    │              │          │
-│         ▼                    ▼                    ▼              ▼          │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────┐  │
-│  │ Keyboard/    │    │ Entity       │    │ Shader       │    │ irrKlang │  │
-│  │ Mouse/       │    │ Component    │    │ Pipeline     │    │          │  │
-│  │ Callbacks    │    │ System (ECS) │    │ (Multi-pass) │    │          │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘    └──────────┘  │
-│                             │                    │                          │
-│                    ┌────────┼────────┐           │                          │
-│                    ▼        ▼        ▼           ▼                          │
-│              ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐                    │
-│              │Transform│ │Render  │ │Physics │ │Interact│                    │
-│              │Component│ │Component│ │Component│ │Component│                   │
-│              └────────┘ └────────┘ └────────┘ └────────┘                    │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                      MATRIZ DE CUMPLIMIENTO DE RÚBRICA DEL PROYECTO                             │
+├──────────────────────────────────────┬─────────┬─────────────────────────────────────────────────┤
+│ Requisito Oficial de la Rúbrica      │ Puntos  │ Solución en la Arquitectura                     │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Escena con >= 80 modelos geométricos │ 2.0 pts │ Escena completa de la casa dividida en sectores │
+│ (>= 80% creación/autoría)            │         │ con mobiliario, estructura y decoraciones       │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Mínimo 2 modelos de control de cámara│ 1.0 pts │ Modo 1: Cámara Primera Persona (FPS interactiva)│
+│                                      │         │ Modo 2: Cámara Tercera Persona (avatar KAYA)   │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Interacción con >= 15 elementos      │ 1.0 pts │ 4 puertas + 4 interruptores + 3 ventanas +      │
+│ (tomar, rotar, trasladar, etc.)      │         │ 4 objetos manipulables/agarrables (15 objetos)  │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Materiales: opacos, plásticos,       │ 1.0 pts │ Phong (opacos y plásticos), Fresnel (vidrios    │
+│ traslúcidos y metálicos              │         │ de ventana y accesorios metálicos)              │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Texturizado y Cubemap de ambiente    │ 0.5 pts │ Skybox 6 caras con `cubemap.h` + mapas difusos, │
+│ de alta calidad                      │         │ normales y especulares en superficies           │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ 10 Animaciones simples               │ 2.0 pts │ - 10 Simples: 4 puertas, 3 ventanas, 3 switches │
+│ 5 Animaciones por keyframes          │ (Total  │ - 5 Keyframes: Caminado/Idle de KAYA, cajones,  │
+│ 5 Animaciones procedurales           │ Anim.)  │   péndulo reloj, apertura portón, abanico techo │
+│                                      │         │ - 5 Procedurales: Chimenea, olas/agua piscina,  │
+│                                      │         │   parpadeo luz, cortinas al viento, oscilación  │
+├──────────────────────────────────────┼─────────┼─────────────────────────────────────────────────┤
+│ Empaquetado InstallForge (.exe),     │ 2.5 pts │ Instalador autónomo con DLLs requeridas y       │
+│ manual.pdf y ejecución funcional     │         │ manual de usuario e instalación estructurado    │
+└──────────────────────────────────────┴─────────┴─────────────────────────────────────────────────┘
 ```
 
-### 3.2 Sistema de Entidades (ECS Ligero)
+---
 
-Dado que el código base usa herencia y no ECS puro, propondré un **híbrido pragmático**:
+## 3. Arquitectura del Sistema: Patrón del Curso
+
+La arquitectura sigue el patrón estructurado en funciones globales y módulos limpios que los alumnos dominan desde las prácticas 08, 13 y 14, evitando frameworks externos innecesarios:
+
+```
+                           ┌──────────────────────────┐
+                           │         main()           │
+                           │   ┌──────────────────┐   │
+                           │   │     Start()      │   │
+                           │   └────────┬─────────┘   │
+                           │            ▼             │
+                           │   ┌──────────────────┐   │
+                           │   │  While running:  │   │
+                           │   │     Update()     │   │
+                           │   └──────────────────┘   │
+                           └────────────┬─────────────┘
+                                        │
+      ┌──────────────────┬──────────────┼──────────────┬──────────────────┐
+      ▼                  ▼              ▼              ▼                  ▼
+┌───────────┐      ┌───────────┐  ┌───────────┐  ┌───────────┐      ┌───────────┐
+│ Input &   │      │ Scene &   │  │ Shaders   │  │ Physics & │      │ Audio     │
+│ Cameras   │      │ Objects   │  │ Pipeline  │  │ Picking   │      │ Engine    │
+├───────────┤      ├───────────┤  ├───────────┤  ├───────────┤      ├───────────┤
+│- GLFW     │      │- House    │  │- Phong    │  │- Offscreen│      │- irrKlang │
+│  callbacks│      │  (Static) │  │  MultLight│  │  Pick FBO │      │  ISound-  │
+│- Cam 1st  │      │- Doors &  │  │- Fresnel  │  │- Color ID │      │  Engine   │
+│  Person   │      │  Windows  │  │  Shader   │  │  Decodif. │      │- Spatial  │
+│- Cam 3rd  │      │- Switches │  │- Skinned  │  │- AABB     │      │  3D Sound │
+│  Person   │      │- Props    │  │  Shader   │  │  Collision│      │- SFX UI   │
+│- Key/Mouse│      │- Avatar   │  │- Cubemap  │  │- Drag/Drop│      │           │
+└───────────┘      └───────────┘  └───────────┘  └───────────┘      └───────────┘
+```
+
+### 3.1 Ciclo de Ejecución (Start & Update)
+
+1. **`Start()`**:
+   - Inicializa GLFW (versión 3.3 Core Profile) y crea ventana de $1024 \times 768$ (o pantalla completa).
+   - Registra callbacks: `framebuffer_size_callback`, `mouse_callback`, `scroll_callback`, `mouseButtonCallback`.
+   - Inicializa GLAD para enlazar las funciones del API OpenGL.
+   - Habilita `GL_DEPTH_TEST` y modo de blending para transparencias.
+   - Compila el repertorio de shaders:
+     - `mLightsShader` (`shaders/11_PhongShaderMultLights.*`)
+     - `fresnelShader` (`shaders/11_Fresnel.*`)
+     - `dynamicShader` (`shaders/10_vertex_skinning-IT.*`)
+     - `cubemapShader` (`shaders/10_vertex_cubemap.*`)
+     - `pickingShader` (`shaders/15_picking.*`)
+     - `particlesShader` (`shaders/13_particles.*`)
+     - `proceduralShader` (`shaders/12_ProceduralAnimation.*`)
+   - Instancia y carga los modelos 3D (`Model`, `AnimatedModel`) asignando a cada uno su identificador entero `IDforPicking`.
+   - Carga el Skybox (`CubeMap`) con texturas de día/noche.
+   - Inicializa fuentes de luz (`Light`) y materiales base (`Material`).
+   - Inicializa el dispositivo de sonido `createIrrKlangDevice()`.
+
+2. **`Update()`**:
+   - Cálculo estricto de tiempo entre cuadros: `deltaTime = currentFrame - lastFrame`.
+   - Procesamiento continuo de entradas en `processInput(window)`.
+   - **Pase 1 (Picking si hubo click o hover interactivo):**
+     - Renderiza con `pickingShader` los objetos interactuables en buffer de selección con codificación de color RGB según `IDforPicking`.
+     - Lee el pixel bajo el cursor (`glReadPixels`) y recupera el objeto apuntado.
+   - **Pase 2 (Renderizado Principal de la Escena):**
+     - Limpieza de buffers de color y profundidad (`GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT`).
+     - Selección de matriz de proyección y vista según la cámara activa (Primera Persona o Tercera Persona).
+     - Render del Skybox (`CubeMap::drawCubeMap`).
+     - Render de objetos opacos (estructuras, paredes, muebles) con `mLightsShader`.
+     - Render de objetos animados por software/matriz (puertas abriendo, interruptores presionados).
+     - Render del personaje animado por huesos con `dynamicShader`.
+     - Render de superficies transparentes/reflectivas (ventanas, espejos, vidrios) con `fresnelShader` ordenados traslúcidos.
+     - Render de sistemas de partículas (fuego/humo de chimenea) con `particlesShader`.
+   - Intercambio de buffers (`glfwSwapBuffers`) y captura de eventos (`glfwPollEvents`).
+
+---
+
+## 4. Modelos de Cámara y Navegación
+
+Cumpliendo el requisito de al menos 2 modelos de cámara conmutables en tiempo de ejecución:
 
 ```cpp
-// Base común para todos los objetos del juego
-class GameObject {
-public:
-    Transform transform;           // Posición, rotación, escala
-    std::string name;              // Identificador único
-    std::string tag;               // "Door", "LightSwitch", "Window", "Grabbable", etc.
-    bool active = true;
-    unsigned int pickingID;        // Para color-picking (práctica 13)
-    
-    virtual void Update(float deltaTime) {}
-    virtual void OnInteract() {}   // Click izquierdo
-    virtual void OnHover() {}      // Mouse sobre objeto
-    virtual void OnGrab() {}       // Click sostenido
-    virtual void OnRelease() {}    // Soltar click
-    virtual void Draw(Shader& shader) {}
-};
+// Variables de control de cámara (en el estilo de práctica 09 y 13)
+Camera camera(glm::vec3(0.0f, 1.7f, 5.0f));     // Cámara FPS (altura de ojos: 1.7m)
+Camera camera3rd(glm::vec3(0.0f, 0.0f, 0.0f));  // Cámara 3ra Persona orbitando avatar
+bool activeCamera = 1;                           // 1 = 1ra persona, 0 = 3ra persona
 
-// Componentes especializados (composition over inheritance)
-struct InteractableComponent {
-    InteractionType type;          // DOOR, LIGHT_SWITCH, WINDOW, GRABBABLE
-    bool isActive = true;
-    bool isToggled = false;        // Para luces/puertas (estado binario)
-    float animationProgress = 0.0f; // 0.0 - 1.0
-    float animationSpeed = 2.0f;   // Segundos para completar
-    glm::vec3 startPos, endPos;    // Para traslaciones
-    glm::vec3 startRot, endRot;    // Para rotaciones (puertas/ventanas)
-    std::function<void(bool)> onStateChange; // Callback al cambiar estado
-};
-
-struct PhysicsComponent {
-    bool useGravity = false;
-    bool isKinematic = false;      // Si true, se mueve por código, no por física
-    glm::vec3 velocity = glm::vec3(0);
-    float mass = 1.0f;
-    // Colisión simple AABB o esfera
-    BoundingVolume bounds;
-};
-
-struct LightComponent {
-    Light light;                   // Reusa la clase Light existente
-    bool isOn = true;
-    GameObject* switchObject = nullptr; // Referencia al interruptor que lo controla
-};
+// Parámetros de órbita para 3ra persona
+float trdpersonOffset = 4.0f;
+float trdpersonHeight = 1.8f;
+glm::vec3 avatarPosition(0.0f, 0.0f, 0.0f);
+glm::vec3 forwardView(0.0f, 0.0f, 1.0f);
 ```
 
-### 3.3 Gestor de Interacciones (Interaction Manager)
+- **Cámara 1 - Primera Persona (FPS):**
+  - Ideal para inspeccionar la casa, acercarse a objetos, leer notas e interactuar directamente con interruptores y puertas.
+  - Teclas `W`, `A`, `S`, `D` para desplazamiento horizontal sobre el plano $XZ$ de la casa.
+  - Rotación libre mediante `mouse_callback` (`Yaw` y `Pitch`).
+  - Colisión básica contra los muros de la casa mediante cajas delimitadoras AABB.
 
-```cpp
-class InteractionManager {
-public:
-    // Picking por color (ya implementado en práctica 13)
-    GameObject* PickObject(int screenX, int screenY);
-    
-    // Raycast alternativo (más preciso, para futuro)
-    GameObject* RaycastPick(const Camera& camera, double mouseX, double mouseY);
-    
-    // Estado de interacción actual
-    GameObject* hoveredObject = nullptr;
-    GameObject* grabbedObject = nullptr;
-    bool isGrabbing = false;
-    
-    void Update(float deltaTime, GLFWwindow* window, Camera& camera);
-    void OnMouseButton(int button, int action, int mods);
-    void OnMouseMove(double xpos, double ypos);
-    
-private:
-    void HandleGrabRelease(Camera& camera);
-    void HandleClick(GameObject* object);
-    void UpdateGrabbedObject(Camera& camera);
-};
-```
-
-### 3.4 Pipeline de Renderizado (Multi-Pass)
-
-```
-PASS 1: PICKING BUFFER (offscreen, 1x1 o full-res)
-├── Shader: picking.vs/fs
-├── Cada GameObject dibuja con su pickingID único como color
-└── Output: Texture ID buffer (para leer pixel bajo cursor)
-
-PASS 2: SHADOW MAP (opcional, para luces direccionales)
-├── Depth-only pass desde light POV
-└── Output: Depth texture
-
-PASS 3: GEOMETRY PASS (Main render)
-├── Skybox/Cubemap (primero, depth test LEQUAL)
-├── Opaque objects (Phong multi-light + texturas + normal mapping)
-├── Transparent objects (ordenados back-to-front)
-│   ├── Ventanas (alpha blending)
-│   ├── Partículas
-│   └── Agua/espejos
-└── Debug overlays (wireframe, bounds, picking IDs)
-
-PASS 4: POST-PROCESS (opcional)
-├── Bloom (para luces encendidas)
-├── Tone mapping
-└── FXAA
-```
+- **Cámara 2 - Tercera Persona (Avatar Follow):**
+  - Muestra al personaje `KAYA.fbx` caminando por la casa.
+  - Teclas `UP`, `DOWN` mueven el personaje hacia adelante/atrás en dirección a su vector de orientación `forwardView`.
+  - Teclas `LEFT`, `RIGHT` rotan el ángulo de giro del personaje (`rotateCharacter`).
+  - La cámara `camera3rd` se posiciona automáticamente detrás de KAYA:
+    $$\text{pos}_{\text{cam3rd}} = \text{avatarPosition} + (0, 1.8, 0) - (\text{trdpersonOffset} \cdot \text{forwardView})$$
+  - Conmutación directa entre cámaras con teclas de acceso rápido `[F1]` (Tercera persona) y `[F2]` (Primera persona).
 
 ---
 
-## 4. Reglas de Negocio / Lógica de Juego
+## 5. Sistema de Picking y Catálogo de 15 Objetos Interactivos
 
-### 4.1 Definición de Objetos Interactivos
+### 5.1 Mecanismo de Selección por Color (de la Práctica 13)
 
-| Tipo | Tag | Comportamiento | Animación | Feedback |
-|------|-----|----------------|-----------|----------|
-| **Puerta** | `Door` | Click → toggle open/close | Rotación Y (0° ↔ 90°) o translación X | Sonido bisagra, polvo partículas |
-| **Interruptor** | `LightSwitch` | Click → toggle luz asociada | Pequeña animación press (traslación Z) | Click sound, luz on/off, cambio material emissive |
-| **Ventana** | `Window` | Click → toggle open/close | Rotación X (0° ↔ 45°) o translación Y | Sonido cristal, partícula brisa |
-| **Objeto Agarrable** | `Grabbable` | Hold click → attach to camera | Suave follow (lerp) | Outline/shader highlight, sonido agarre |
-| **Luz** | `Light` | Controlada por switch | Fade in/out (0.5s) | Cambio intensidad, color temperatura |
+El picking opera exactamente con el shader `15_picking.vs` y `15_picking.fs`:
+1. Cada modelo interactivo posee un `unsigned int IDforPicking` asignado en su constructor:
+   ```cpp
+   // Asignación de ID único
+   house->IDforPicking       = 100;
+   doorLivingRoom->IDforPicking = 201;
+   switchLivingRoom->IDforPicking = 301;
+   ```
+2. Al pulsar el botón izquierdo del ratón (`GLFW_MOUSE_BUTTON_LEFT`), en `mouseButtonCallback`:
+   ```cpp
+   unsigned char data[4];
+   glReadPixels(SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+   unsigned int pickedID = data[0] + (data[1] << 8) + (data[2] << 16);
+   ```
+3. Se despacha el evento de interacción correspondiente según el ID decodificado.
 
-### 4.2 Estados de Interacción
+### 5.2 Catálogo Detallado de los 15 Elementos Interactivos
+
+| # | Objeto | ID Picking | Habitación | Tipo de Interacción | Efecto Visual / Animación | Efecto de Sonido (irrKlang) |
+|---|---|---|---|---|---|---|
+| **1** | Puerta Principal | `201` | Fachada / Acceso | Click izquierdo | Rotación sobre bisagra $Y$ ($0^\circ \to 90^\circ$) | `sound/door_open.wav` |
+| **2** | Puerta Dormitorio | `202` | Planta Alta | Click izquierdo | Rotación sobre bisagra $Y$ ($0^\circ \to 85^\circ$) | `sound/door_wood.wav` |
+| **3** | Puerta Cocina / Jardín | `203` | Cocina | Click izquierdo | Deslizamiento lateral corredizo en $X$ ($0 \to 1.2\text{m}$) | `sound/door_slide.wav` |
+| **4** | Puerta de Baño | `204` | Baño | Click izquierdo | Rotación sobre bisagra $Y$ ($0^\circ \to -90^\circ$) | `sound/door_close.wav` |
+| **5** | Switch Sala | `301` | Sala Principal | Click izquierdo | Oprime botón + Conmuta Luz puntual de Techo Sala | `sound/switch_click.wav` |
+| **6** | Switch Cocina | `302` | Cocina | Click izquierdo | Oprime botón + Conmuta Focos de Barra Cocina | `sound/switch_click.wav` |
+| **7** | Switch Dormitorio | `303` | Dormitorio | Click izquierdo | Oprime botón + Conmuta Lámparas de Mesa de noche | `sound/switch_click.wav` |
+| **8** | Switch Baño | `304` | Baño | Click izquierdo | Oprime botón + Conmuta Luz de Espejo de Baño | `sound/switch_click.wav` |
+| **9** | Ventana Fachada | `401` | Sala Frontal | Click izquierdo | Apertura tipo abatible, rotación en $Y$ ($35^\circ$) | `sound/window_open.wav` |
+| **10**| Ventana Cocina | `402` | Cocina | Click izquierdo | Apertura tipo guillotina, traslación vertical $+Y$ | `sound/window_slide.wav` |
+| **11**| Ventana Balcón | `403` | Dormitorio Balcón| Click izquierdo | Abatible exterior, rotación en $Y$ ($45^\circ$) | `sound/wind_breeze.wav` |
+| **12**| Lámpara Portátil / Linterna| `501` | Sala | Click sostenido (Drag) | Objeto se adhiere a cámara; soltar activa gravedad | `sound/grab.wav` / `drop.wav`|
+| **13**| Silla de Comedor | `502` | Comedor | Click sostenido (Drag) | Permite arrastrarla y desplazarla en plano del piso | `sound/chair_drag.wav` |
+| **14**| Libro / Diario | `503` | Estudio / Sala | Click izquierdo | Lo levanta al frente de cámara y abre cubierta | `sound/page_turn.wav` |
+| **15**| Taza / Vaso de Vidrio | `504` | Cocina | Click sostenido (Drag) | Se toma en mano; usa material translúcido Fresnel | `sound/glass_clink.wav` |
+
+---
+
+## 6. Iluminación y Catálogo de Materiales
+
+La escena combina dos técnicas de iluminación y sombreado explícitamente requeridas por el curso:
+
+### 6.1 Técnica 1: Modelo de Phong con Múltiples Luces (`11_PhongShaderMultLights`)
+
+Representación de materiales **opacos y plásticos** (muros, pisos de parqué, madera de muebles, techos):
+- **Ecuación implementada en fragment shader:**
+  $$I_{\text{total}} = I_{\text{ambient}} + \sum_{k=1}^{N} \left( I_{\text{diffuse}}^{(k)} + I_{\text{specular}}^{(k)} \right) \cdot \text{atenuación}^{(k)}$$
+- **Configuración de fuentes de luz:**
+  1. *Luz Direccional (Ambiental Exterior):* Simula luz solar/lunar que entra por las ventanas.
+  2. *Luces Puntuales (Interiores):* Una por cada habitación, controladas por su respectivo switch (`gLights[i].Power = isOn ? glm::vec4(60.0f) : glm::vec4(0.0f)`).
+  3. *Luz Focal (Spotlight linterna):* Cono de luz acoplado a la cámara en primera persona para recorrer cuartos oscuros.
+
+### 6.2 Técnica 2: Modelo de Fresnel (`11_Fresnel`)
+
+Representación de materiales **translúcidos y metálicos** (ventanas, espejos, grifería, cristalería):
+- Utiliza la aproximación de Schlick en GPU para mezclar reflexión y refracción sobre el CubeMap ambiental:
+  $$\text{factorFresnel} = \text{\_Bias} + \text{\_Scale} \cdot (1.0 + \mathbf{I} \cdot \mathbf{N})^{\text{\_Power}}$$
+- **Perfiles de materiales calibrados:**
+  - *Vidrios de ventana y vasos (Translúcido):* `mRefractionRatio = 1.0f / 1.52f` (Vidrio común), `_Bias = 0.05f`, `_Scale = 0.95f`, `_Power = 2.0f`.
+  - *Grifos de baño/cocina y pomos (Metálico):* `mRefractionRatio = 1.0f / 2.40f`, `_Bias = 0.85f`, `_Scale = 0.15f`, `_Power = 1.0f`.
+  - *Espejo del baño:* Reflexión planar directa mediante cubemap/FBO con coeficiente de reflexión $> 0.95$.
+
+---
+
+## 7. Desglose Exhaustivo de las 20 Animaciones Requeridas
+
+La especificación exige exactamente 20 animaciones clasificadas en tres familias:
+
+### 7.1 Diez (10) Animaciones Simples
+Movimientos basados en interpolación directa de matrices de transformación (traslación, rotación, escala con función smoothstep de GLM):
+
+1. **Apertura/Cierre Puerta Principal:** Rotación paramétrica en $Y$ de $0^\circ$ a $90^\circ$.
+2. **Apertura/Cierre Puerta Dormitorio:** Rotación paramétrica en $Y$ de $0^\circ$ a $85^\circ$.
+3. **Deslizamiento Puerta Cocina:** Traslación en $X$ de $0$ a $1.2\text{m}$.
+4. **Apertura Puerta Baño:** Rotación en $Y$ de $0^\circ$ a $-90^\circ$.
+5. **Basculación Switch Sala:** Desplazamiento local en $Z$ y rotación $15^\circ$ al oprimir.
+6. **Basculación Switch Cocina:** Desplazamiento y cambio de color emisivo al oprimir.
+7. **Basculación Switch Dormitorio:** Toggle visual de palanca on/off.
+8. **Basculación Switch Baño:** Toggle visual de tecla on/off.
+9. **Apertura Ventana Fachada:** Rotación angular abatible en $Y$ hacia el exterior.
+10. **Apertura Ventana Cocina:** Elevación guillotina en $+Y$ de $0$ a $0.6\text{m}$.
+
+### 7.2 Cinco (5) Animaciones Basadas en Cuadros Clave (Keyframes)
+Animaciones complejas con secuenciamiento de tiempo, huesos esqueléticos o cadenas de keyframes interpolados:
+
+11. **Ciclo de Caminado de KAYA (`KAYA.fbx`):** Skeletal skinning multihueso interpolado por Assimp/GLM (`dynamicShader`, `gBones[100]`).
+12. **Ciclo Idle / Respiración de KAYA:** Animación esquelética de descanso cuando el personaje está detenido.
+13. **Péndulo del Reloj de Pared:** Movimiento armónico con amortiguamiento y marcación periódica de cuadrantes.
+14. **Apertura Secuencial de Cajones de Cómoda:** Keyframe 1: apertura primer cajón, Keyframe 2: segundo cajón, Keyframe 3: retorno suave.
+15. **Apertura Cinemática de Portón de Cochera:** Elevación vertical inicial y curvado horizontal bajo el techo en dos fases cinemáticas.
+
+### 7.3 Cinco (5) Animaciones Procedurales
+Animaciones generadas matemáticamente en tiempo de ejecución (funciones trigonométricas, ruido o manipulación en vertex/fragment shader):
+
+16. **Llama y Humo en Chimenea:** Variación procedural en shader (`12_ProceduralAnimation.vs/fs`) deformando vértices y colores con senos y cosenos en función de `glfwGetTime()`.
+17. **Ondulaciones de Agua en Fuente / Tina de Baño:** Implementada con `13_wavesAnimation.vs/fs` usando perturbación sinusoidal de normales en la malla plana.
+18. **Parpadeo Estocástico de Lámpara Antigua:** Variación pseudo-aleatoria de la potencia luminosa (`glm::sin(time * 15.0f) * fract(sin(time))`) simulando falso contacto.
+19. **Movimiento Suave de Cortinas por la Brisa:** Deformación armónica de los vértices inferiores de la tela ($z = A \cdot \sin(\omega t + ky)$).
+20. **Ventilador de Techo en Rotación Continua:** Velocidad angular procedural con aceleración al encender y desaceleración por fricción al apagar ($\theta(t) = \theta_0 + \omega t$).
+
+---
+
+## 8. Estructura de Proyecto en Visual Studio (MSVC)
+
+A diferencia de proyectos abstractos, esta estructura encaja perfectamente dentro de la solución `Proyecto/Proyecto/Proyecto.vcxproj` existente y enlaza con los directorios de librerías oficiales de la UNAM:
 
 ```
-┌─────────────┐     Mouse Enter      ┌─────────────┐
-│   IDLE      │ ──────────────────▶ │   HOVER     │
-│ (Nada)      │                      │ (Highlight) │
-└─────────────┘                      └──────┬──────┘
-      ▲                                      │
-      │           Mouse Exit                 │ Left Click
-      └──────────────────────────────────────┘
-                                              │
-                                              ▼
-                                    ┌─────────────────┐
-                                    │   INTERACTING   │
-                                    │ (Door/Window    │
-                                    │  toggle, Light  │
-                                    │  toggle)        │
-                                    └────────┬────────┘
-                                             │
-                              ┌──────────────┼──────────────┐
-                              │              │              │
-                        Animation         State           Callback
-                        Complete          Changed         (Sound, Particles)
-                              │              │              │
-                              ▼              ▼              ▼
-                                    ┌─────────────┐
-                                    │    IDLE     │ (nuevo estado)
-                                    └─────────────┘
-
-AGARRE (Hold Click > 0.3s):
-┌─────────────┐     Hold Click       ┌─────────────┐     Release      ┌─────────────┐
-│   HOVER     │ ──────────────────▶ │  GRABBING   │ ───────────────▶ │   IDLE      │
-│             │   (0.3s threshold)  │ (Attached   │   (Drop +        │ (Physics    │
-│             │                      │  to camera)│    gravity)      │  enabled)   │
-└─────────────┘                      └─────────────┘                  └─────────────┘
+C:\Users\daira\Documents\CompuG\
+├── bin/                               # Ejecutable final, DLLs y Assets
+│   ├── assimp-vc143-mt.dll            # DLLs oficiales
+│   ├── irrKlang.dll
+│   ├── ikpMP3.dll
+│   ├── models/                        # Modelos de la casa, KAYA, puertas, muebles
+│   ├── shaders/                       # Shaders GLSL de las prácticas (01 a 15)
+│   ├── textures/                      # Texturas y cubemaps
+│   └── sound/                         # Efectos WAV/MP3 para irrKlang
+├── deps/                              # Bibliotecas de cabecera y estáticas
+│   ├── glad/ (MSVC2022/include & lib)
+│   ├── glfw/ (include & lib-vc2022)
+│   ├── glm/ (include)
+│   ├── assimp/ (MSVC2022/include & lib)
+│   └── irrklang/ (include & lib/x64)
+└── Proyecto/                          # Directorio de trabajo del alumno
+    ├── Anteproyecto.pdf               # Documento base de partida
+    ├── Especificaciones...pdf         # Rúbrica oficial del profesor
+    ├── Cimientos.blend                # Modelo base en Blender
+    └── Proyecto/                      # Código C++ del Proyecto Final
+        ├── Proyecto.slnx / .vcxproj   # Solución oficial Visual Studio 2022
+        ├── main.cpp                   # Función main(), Start() y Update()
+        ├── stb_image.cpp              # Implementación STB
+        ├── HouseScene.h / .cpp        # Definición de los 80+ objetos y cuartos
+        ├── InteractionSystem.h / .cpp # Lógica de Picking y respuesta a clicks
+        ├── AnimationController.h      # Manejo de los 3 tipos de animaciones
+        └── Player.h / .cpp            # Control de cámara FPS y colisiones
 ```
 
-### 4.3 Reglas de Colisión y Navegación
+### 8.1 Configuración de Enlace en `Proyecto.vcxproj` (x64 Release / Debug)
 
-```cpp
-struct NavigationRules {
-    // Jugador
-    float playerHeight = 1.7f;
-    float playerRadius = 0.3f;
-    float stepHeight = 0.25f;      // Altura máxima de escalón
-    float slopeLimit = 45.0f;      // Grados máximos de pendiente
-    
-    // Colisión con paredes/puertas
-    bool useAABB = true;           // AABB simple vs mesh collision
-    float doorOpenAngle = 90.0f;   // Grados para considerar "abierta"
-    float interactionDistance = 2.5f; // Distancia máxima para interactuar
-    
-    // Objetos agarrable
-    float grabDistance = 3.0f;
-    float holdDistance = 1.5f;     // Distancia frente a cámara al sostener
-    float throwForce = 10.0f;      // Si se implementa lanzamiento
-};
-```
-
-### 4.4 Sistema de Luces (Integración con Práctica 07-08)
-
-```cpp
-// Cada luz en la escena tiene un GameObject asociado
-struct LightGameObject : GameObject {
-    LightComponent lightComp;
-    InteractableComponent interactComp; // Tipo: LIGHT_SWITCH
-    
-    // El interruptor es un GameObject separado que referencia a esta luz
-    GameObject* linkedSwitch = nullptr;
-    
-    void OnInteract() override {
-        lightComp.isOn = !lightComp.isOn;
-        // Animación fade
-        interactComp.animationProgress = 0.0f;
-        interactComp.startState = !lightComp.isOn;
-        interactComp.endState = lightComp.isOn;
-        
-        // Callback: sonido, partículas, actualizar shader
-        if (interactComp.onStateChange) 
-            interactComp.onStateChange(lightComp.isOn);
-    }
-    
-    void Update(float dt) override {
-        if (interactComp.animationProgress < 1.0f) {
-            interactComp.animationProgress += dt / interactComp.animationSpeed;
-            float t = glm::smoothstep(0.0f, 1.0f, interactComp.animationProgress);
-            lightComp.light.Power = glm::mix(
-                glm::vec4(0), 
-                lightComp.basePower, 
-                lightComp.isOn ? t : (1.0f - t)
-            );
-        }
-    }
-};
-```
+- **C/C++ -> General -> Additional Include Directories:**
+  ```
+  ..\..\deps\glad\MSVC2022\include;
+  ..\..\deps\glfw\include;
+  ..\..\deps\glm\include;
+  ..\..\deps\assimp\MSVC2022\include;
+  ..\..\deps\irrklang\include;
+  ..\..\08_IlluminationModelsII\Proyecto\08_IlluminationModelsII\include;
+  %(AdditionalIncludeDirectories)
+  ```
+- **Linker -> General -> Additional Library Directories:**
+  ```
+  ..\..\deps\glad\MSVC2022\lib;
+  ..\..\deps\glfw\lib-vc2022;
+  ..\..\deps\assimp\MSVC2022\lib;
+  ..\..\deps\irrklang\lib\x64;
+  %(AdditionalLibraryDirectories)
+  ```
+- **Linker -> Input -> Additional Dependencies:**
+  ```
+  opengl32.lib;
+  glfw3.lib;
+  glad.lib;
+  assimp-vc143-mt.lib;
+  irrKlang.lib;
+  %(AdditionalDependencies)
+  ```
 
 ---
 
-## 5. Estructura de Archivos Propuesta
+## 9. Plan de Empaquetado y Entregables Finales
 
-```
-InteractiveHouse/
-├── CMakeLists.txt / premake5.lua
-├── src/
-│   ├── main.cpp                    # Entry point, game loop
-│   ├── core/
-│   │   ├── Application.h/.cpp      # Wrapper GLFW + loop principal
-│   │   ├── Camera.h/.cpp           # Extiende Camera.h existente (FPS + 3rd person)
-│   │   ├── Shader.h/.cpp           # Extiende shader_m.h (utilidades extra)
-│   │   ├── Model.h/.cpp            # Extiende Model.h (pickingID, animaciones)
-│   │   └── ResourceManager.h/.cpp  # Cache de shaders, modelos, texturas
-│   ├── ecs/
-│   │   ├── GameObject.h/.cpp       # Entidad base
-│   │   ├── Transform.h/.cpp        # Pos/Rot/Scale + matriz modelo
-│   │   ├── Component.h             # Base para componentes
-│   │   └── ComponentTypes.h        # Definiciones de componentes
-│   ├── systems/
-│   │   ├── InteractionSystem.h/.cpp    # Picking, hover, grab, click
-│   │   ├── AnimationSystem.h/.cpp      # Interpolación estados (puertas, luces)
-│   │   ├── PhysicsSystem.h/.cpp        # Gravedad, colisiones simples
-│   │   ├── RenderSystem.h/.cpp         # Multi-pass render
-│   │   └── AudioSystem.h/.cpp          # Wrapper irrKlang
-│   ├── gameplay/
-│   │   ├── PlayerController.h/.cpp     # Movimiento FPS, input
-│   │   ├── Door.h/.cpp                 # Lógica puerta (hereda GameObject)
-│   │   ├── LightSwitch.h/.cpp          # Lógica interruptor
-│   │   ├── Window.h/.cpp               # Lógica ventana
-│   │   ├── GrabbableObject.h/.cpp      # Lógica agarre
-│   │   └── LightController.h/.cpp      # Gestor luces de la escena
-│   └── scene/
-│       ├── Scene.h/.cpp                # Grafo de escena, carga nivel
-│       └── HouseScene.cpp              # Setup específico de la casa
-├── shaders/
-│   ├── picking.vs/.fs                  # Copy de bin/shaders/15_picking.*
-│   ├── phong_lights.vs/.fs             # Copy de 11_PhongShaderMultLights.*
-│   ├── skinned.vs/.fs                  # Copy de 10_vertex_skinning-IT.*
-│   ├── cubemap.vs/.fs                  # Copy de 10_vertex_cubemap.*
-│   ├── outline.vs/.fs                  # NUEVO: Post-process outline (hover)
-│   └── ui.vs/.fs                       # NUEVO: UI/HUD simple
-├── assets/
-│   ├── models/                         # FBX de la casa, puertas, objetos
-│   ├── textures/                       # Diffuse, normal, specular, emissive
-│   ├── sounds/                         # .ogg/.wav para interacciones
-│   └── cubemaps/                       # Skybox
-└── bin/                                # Build output (DLLs, shaders, assets)
-```
-
----
-
-## 6. Plan de Implementación por Fases
-
-### Fase 1: Fundación (Semana 1-2)
-- [ ] Configurar proyecto CMake + copiar headers base (`camera.h`, `shader_m.h`, `model.h`, `mesh.h`, `light.h`, `material.h`, `cubemap.h`, `modelstructs.h`, `animatedmodel.h`)
-- [ ] `Application` class: init GLFW/GLAD, loop principal, deltaTime
-- [ ] `Camera` FPS: movimiento WASD + mouse look + colisión AABB básica
-- [ ] `ResourceManager`: carga perezosa de shaders, modelos, texturas
-- [ ] Cargar `House03.fbx` + skybox + iluminación básica (Phong multi-light)
-
-### Fase 2: Sistema de Picking e Interacción Base (Semana 2-3)
-- [ ] Implementar **Picking Pass** (offscreen FBO o leer pixel centro pantalla)
-- [ ] `InteractionManager`: hover, click, estados
-- [ ] `GameObject` base + `InteractableComponent`
-- [ ] **Test**: Click en cubo → cambia color (validar pickingID)
-
-### Fase 3: Objetos Interactivos Core (Semana 3-4)
-- [ ] `Door`: Animación rotación Y (0°↔90°), sonido, colisión dinámica
-- [ ] `LightSwitch`: Toggle luz asociada, fade in/out, material emissive
-- [ ] `Window`: Animación rotación X (0°↔45°), colisión al abrir
-- [ ] Integrar en `HouseScene`: colocar 3-4 puertas, 2-3 interruptores, 2 ventanas
-
-### Fase 4: Sistema de Agarre (Semana 4-5)
-- [ ] `GrabbableObject`: Hold click → attach a cámara (lerp suave)
-- [ ] PhysicsComponent: gravedad al soltar, colisión suelo
-- [ ] Outline shader (post-process) para feedback visual hover/grab
-- [ ] 5-6 objetos agarrable en la casa (libros, vasos, sillas pequeñas)
-
-### Fase 5: Pulido y Extras (Semana 5-6)
-- [ ] Sonidos (irrKlang): pasos, puertas, interruptores, agarre, drops
-- [ ] Partículas: polvo al abrir puertas, chispas en interruptores
-- [ ] HUD simple: crosshair, tooltip interacción ("[E] Abrir", "[Hold] Agarrar")
-- [ ] Guardar/cargar estado (JSON: posiciones objetos, estados luces/puertas)
-- [ ] Optimización: Frustum culling, instancing para objetos repetidos
-- [ ] Build release + README + controles
-
----
-
-## 7. Decisiones Técnicas Clave
-
-### 7.1 Picking: Color ID vs Raycast
-**Decisión: Color ID (práctica 13)**
-- **Pros:** Ya implementado, GPU-accelerado, pixel-perfect, funciona con geometría compleja
-- **Contras:** Requiere pass extra, 1 frame de latencia, limited a 16M objetos (24-bit)
-- **Implementación:** FBO offscreen 1x1 pixel en centro de pantalla (performance) o full-res
-
-### 7.2 Animaciones: Keyframe vs Procedural
-**Decisión: Procedural (lerp/smoothstep)**
-- Puertas/ventanas/interruptores: interpolación simple start→end
-- No requiere sistema de animación complejo (ahorra tiempo)
-- Extensible a keyframes si se necesita después
-
-### 7.3 Física: Completa vs Kinemática
-**Decisión: Kinemática + Gravedad Simple**
-- Objetos agarrable: kinemáticos mientras se sostienen
-- Al soltar: gravedad simple (velocity.y -= 9.8 * dt) + colisión AABB suelo/paredes
-- Sin motor de física completo (Box2D/Bullet) - overkill para este scope
-
-### 7.4 Colisiones: AABB vs Mesh
-**Decisión: AABB + NavMesh Simple**
-- Jugador: cápsula/AABB vs AABB de paredes/puertas
-- Puertas abiertas: actualizar AABB o desactivar colisión
-- Objetos pequeños: esfera vs AABB
-
-### 7.5 Arquitectura: Herencia vs ECS
-**Decisión: Híbrido (GameObject + Components)**
-- `GameObject` base con `Transform` + virtual `Update/Draw`
-- Components opcionales: `InteractableComponent`, `PhysicsComponent`, `LightComponent`
-- Fácil migración a ECS puro si el proyecto crece
-
----
-
-## 8. Riesgos y Mitigaciones
-
-| Riesgo | Probabilidad | Impacto | Mitigación |
-|--------|--------------|---------|------------|
-| Picking no funciona en objetos transparentes | Alta | Media | Render picking pass ANTES de transparentes; ignorar alpha < 0.1 en shader picking |
-| Animaciones de puertas se traban con colisión | Media | Alta | Desactivar colisión puerta mientras se anima; usar triggers |
-| Performance con muchas luces dinámicas | Media | Media | Máx 8-16 luces por shader (UBO/SSBO); baked lightmaps para estáticas |
-| Assimp no carga animaciones FBX correctamente | Baja | Alta | Validar modelos temprano; tener modelos backup (.obj/.gltf) |
-| irrKlang problemas de licencia/distribución | Baja | Media | Usar OpenAL/SoLoud como alternativa; incluir DLLs en bin/ |
-
----
-
-## 9. Criterios de Aceptación (Definition of Done)
-
-### MVP (Entregable Mínimo)
-- [ ] Compila y ejecuta sin errores en Windows (VS2022 / MinGW)
-- [ ] Navegación FPS fluida (60 FPS @ 1080p, GTX 1060+)
-- [ ] Click en puerta → se abre/cierra con animación suave
-- [ ] Click en interruptor → luz asociada enciende/apaga (fade)
-- [ ] Click en ventana → se abre/cierra
-- [ ] Hold click en objeto → lo agarra, mover mouse → mueve objeto, soltar → cae con gravedad
-- [ ] Skybox visible, iluminación coherente
-- [ ] Sin memory leaks (valgrind / VS diagnostic tools)
-
-### Calidad de Código
-- [ ] Separación clara: core / systems / gameplay / scene
-- [ ] Sin globals excesivos (máximo: Application, ResourceManager, Scene)
-- [ ] RAII para recursos OpenGL (shaders, VAOs, textures, FBOs)
-- [ ] Const-correctness, no raw owning pointers
-- [ ] Documentación Doxygen en clases públicas
-
----
-
-## 10. Próximos Pasos Inmediatos
-
-1. **Crear estructura de carpetas** y `CMakeLists.txt`
-2. **Copiar headers base** de `08_IlluminationModelsII/include/` a `src/core/`
-3. **Extraer shaders** de `bin/shaders/` a `shaders/`
-4. **Crear `Application` class** envolviendo el loop principal
-5. **Test rápido**: Cargar `House03.fbx` + skybox + 1 luz + cámara FPS
-6. **Validar picking** con el shader `15_picking.vs/fs` existente
-
----
-
-¿Te gustaría que profundice en algún aspecto específico? Por ejemplo:
-- Detalle técnico del **InteractionManager** y picking
-- Diseño del **sistema de animaciones** para puertas/ventanas
-- Estructura del **CMakeLists.txt** y dependencias
-- **HouseScene** layout (dónde colocar cada objeto interactivo)
-- Integración de **irrKlang** para audio posicional
+En estricta conformidad con las normas de entrega del curso:
+1. **No se entrega código fuente al final:** El código se evalúa durante las revisiones de avances; la entrega final se compone de:
+   - **`ProyectoFinal_Instalador.exe`**: Creado con **InstallForge**, empaquetando el ejecutable Release x64, las carpetas `bin/models`, `bin/shaders`, `bin/textures`, `bin/sound` y las DLLs requeridas (`assimp-vc143-mt.dll`, `irrKlang.dll`, `ikpMP3.dll`).
+   - **`manual.pdf`**: Documento con requerimientos de sistema, guía de instalación paso a paso, controles de teclado/mouse para ambas cámaras y descripción de las 15 interacciones.
+   - **Reporte escrito en Español (10%) e Inglés (10%)**: Con portada formal, hoja de evidencias, resumen, introducción, metodología, resultados, experimentos y conclusiones individuales por integrante.
+   - **Video Demostrativo (30%)**: Recorrido de 3 a 5 minutos mostrando los 80 modelos, ambas cámaras, las 15 interacciones, las 20 animaciones y los dos modelos de iluminación (Phong y Fresnel).

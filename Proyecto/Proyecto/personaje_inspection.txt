@@ -1,0 +1,333 @@
+=== PERSONAJE_ESTUDIANTE.FBX ===
+Meshes: 7 | Animations: 3
+Anim [0]: "Esqueleto|Caminar" Duration: 24 Ticks: 24 Channels: 16
+   Chan: Antebrazo.L (pos:2, rot:2)
+   Chan: Antebrazo.R (pos:2, rot:2)
+   Chan: Brazo.L (pos:25, rot:25)
+   Chan: Brazo.R (pos:25, rot:25)
+   Chan: Cabeza (pos:2, rot:2)
+   Chan: Cadera (pos:2, rot:2)
+   Chan: Columna (pos:2, rot:2)
+   Chan: Esqueleto (pos:2, rot:2)
+   Chan: Mano.L (pos:2, rot:2)
+   Chan: Mano.R (pos:2, rot:2)
+   Chan: Muslo.L (pos:25, rot:25)
+   Chan: Muslo.R (pos:25, rot:25)
+   Chan: Pie.L (pos:2, rot:2)
+   Chan: Pie.R (pos:2, rot:2)
+   Chan: Pierna.L (pos:2, rot:2)
+   Chan: Pierna.R (pos:2, rot:2)
+Anim [1]: "Esqueleto|Regar" Duration: 96 Ticks: 24 Channels: 16
+   Chan: Antebrazo.L (pos:2, rot:2)
+   Chan: Antebrazo.R (pos:46, rot:46)
+   Chan: Brazo.L (pos:10, rot:10)
+   Chan: Brazo.R (pos:46, rot:46)
+   Chan: Cabeza (pos:46, rot:46)
+   Chan: Cadera (pos:2, rot:2)
+   Chan: Columna (pos:46, rot:46)
+   Chan: Esqueleto (pos:2, rot:2)
+   Chan: Mano.L (pos:2, rot:2)
+   Chan: Mano.R (pos:32, rot:32)
+   Chan: Muslo.L (pos:2, rot:2)
+   Chan: Muslo.R (pos:2, rot:2)
+   Chan: Pie.L (pos:2, rot:2)
+   Chan: Pie.R (pos:2, rot:2)
+   Chan: Pierna.L (pos:2, rot:2)
+   Chan: Pierna.R (pos:2, rot:2)
+Anim [2]: "Esqueleto|Reposo" Duration: 48 Ticks: 24 Channels: 16
+   Chan: Antebrazo.L (pos:2, rot:2)
+   Chan: Antebrazo.R (pos:2, rot:2)
+   Chan: Brazo.L (pos:20, rot:20)
+   Chan: Brazo.R (pos:18, rot:18)
+   Chan: Cabeza (pos:49, rot:49)
+   Chan: Cadera (pos:2, rot:2)
+   Chan: Columna (pos:49, rot:49)
+   Chan: Esqueleto (pos:2, rot:2)
+   Chan: Mano.L (pos:2, rot:2)
+   Chan: Mano.R (pos:2, rot:2)
+   Chan: Muslo.L (pos:2, rot:2)
+   Chan: Muslo.R (pos:2, rot:2)
+   Chan: Pie.L (pos:2, rot:2)
+   Chan: Pie.R (pos:2, rot:2)
+   Chan: Pierna.L (pos:2, rot:2)
+   Chan: Pierna.R (pos:2, rot:2)
+Node: "RootNode" meshes: 0 Pos:(0,0,0) Scl:(1,1,1)
+  Node: "Esqueleto" meshes: 0 Pos:(0,0,0) Scl:(1,1,1)
+    Node: "Cadera" meshes: 0 Pos:(0,0,0.7) Scl:(1,1,1)
+      Node: "Columna" meshes: 0 Pos:(0,0.2,0) Scl:(1,1,1)
+        Node: "Cabeza" meshes: 0 Pos:(0,0.33,-9.31323e-09) Scl:(1,1,1)
+          Node: "Gorra" meshes: 1 Pos:(0,-1.23,0) Scl:(1,1,1)
+            -> Mesh: "Plano.001" Verts: 96 Bones: 0
+        Node: "Brazo.L" meshes: 0 Pos:(0.21,0.27,-1.86265e-09) Scl:(1,1,1)
+          Node: "Antebrazo.L" meshes: 0 Pos:(1.55534e-08,0.24,1.68475e-08) Scl:(1,1,1)
+            Node: "Mano.L" meshes: 0 Pos:(5.43469e-10,0.23,3.00934e-08) Scl:(1,1,1)
+        Node: "Brazo.R" meshes: 0 Pos:(-0.21,0.27,-1.86265e-09) Scl:(1,1,1)
+          Node: "Antebrazo.R" meshes: 0 Pos:(6.15837e-08,0.24,3.72529e-09) Scl:(1,1,1)
+            Node: "Mano.R" meshes: 0 Pos:(-7.45058e-08,0.23,-1.11759e-08) Scl:(1,1,1)
+              Node: "Regadera" meshes: 1 Pos:(0.00356251,0.260437,-0.0213633) Scl:(1,1,1)
+                -> Mesh: "Plano.004" Verts: 670 Bones: 0
+      Node: "Muslo.L" meshes: 0 Pos:(0.11,0,0) Scl:(1,1,1)
+        Node: "Pierna.L" meshes: 0 Pos:(0,0.32,0) Scl:(1,1,1)
+          Node: "Pie.L" meshes: 0 Pos:(0,0.3,0) Scl:(1,1,1)
+      Node: "Muslo.R" meshes: 0 Pos:(-0.11,0,0) Scl:(1,1,1)
+        Node: "Pierna.R" meshes: 0 Pos:(0,0.32,0) Scl:(1,1,1)
+          Node: "Pie.R" meshes: 0 Pos:(0,0.3,0) Scl:(1,1,1)
+  Node: "Personaje" meshes: 5 Pos:(0,0,0) Scl:(1,1,1)
+    -> Mesh: "Plano" Verts: 72 Bones: 15
+       Bone [0]: "Cadera" Weights: 0
+       Bone [1]: "Columna" Weights: 0
+       Bone [2]: "Cabeza" Weights: 0
+       Bone [3]: "Brazo.L" Weights: 0
+       Bone [4]: "Antebrazo.L" Weights: 0
+       Bone [5]: "Mano.L" Weights: 0
+       Bone [6]: "Brazo.R" Weights: 0
+       Bone [7]: "Antebrazo.R" Weights: 0
+       Bone [8]: "Mano.R" Weights: 0
+       Bone [9]: "Muslo.L" Weights: 0
+       Bone [10]: "Pierna.L" Weights: 24
+       Bone [11]: "Pie.L" Weights: 36
+       Bone [12]: "Muslo.R" Weights: 0
+       Bone [13]: "Pierna.R" Weights: 24
+       Bone [14]: "Pie.R" Weights: 36
+    -> Mesh: "Plano" Verts: 64 Bones: 15
+       Bone [0]: "Cadera" Weights: 16
+       Bone [1]: "Columna" Weights: 8
+       Bone [2]: "Cabeza" Weights: 0
+       Bone [3]: "Brazo.L" Weights: 0
+       Bone [4]: "Antebrazo.L" Weights: 0
+       Bone [5]: "Mano.L" Weights: 0
+       Bone [6]: "Brazo.R" Weights: 0
+       Bone [7]: "Antebrazo.R" Weights: 0
+       Bone [8]: "Mano.R" Weights: 0
+       Bone [9]: "Muslo.L" Weights: 28
+       Bone [10]: "Pierna.L" Weights: 28
+       Bone [11]: "Pie.L" Weights: 16
+       Bone [12]: "Muslo.R" Weights: 28
+       Bone [13]: "Pierna.R" Weights: 28
+       Bone [14]: "Pie.R" Weights: 16
+    -> Mesh: "Plano" Verts: 116 Bones: 15
+       Bone [0]: "Cadera" Weights: 60
+       Bone [1]: "Columna" Weights: 44
+       Bone [2]: "Cabeza" Weights: 64
+       Bone [3]: "Brazo.L" Weights: 8
+       Bone [4]: "Antebrazo.L" Weights: 8
+       Bone [5]: "Mano.L" Weights: 0
+       Bone [6]: "Brazo.R" Weights: 8
+       Bone [7]: "Antebrazo.R" Weights: 8
+       Bone [8]: "Mano.R" Weights: 0
+       Bone [9]: "Muslo.L" Weights: 28
+       Bone [10]: "Pierna.L" Weights: 4
+       Bone [11]: "Pie.L" Weights: 0
+       Bone [12]: "Muslo.R" Weights: 28
+       Bone [13]: "Pierna.R" Weights: 4
+       Bone [14]: "Pie.R" Weights: 0
+    -> Mesh: "Plano" Verts: 64 Bones: 15
+       Bone [0]: "Cadera" Weights: 8
+       Bone [1]: "Columna" Weights: 8
+       Bone [2]: "Cabeza" Weights: 12
+       Bone [3]: "Brazo.L" Weights: 24
+       Bone [4]: "Antebrazo.L" Weights: 32
+       Bone [5]: "Mano.L" Weights: 8
+       Bone [6]: "Brazo.R" Weights: 24
+       Bone [7]: "Antebrazo.R" Weights: 32
+       Bone [8]: "Mano.R" Weights: 8
+       Bone [9]: "Muslo.L" Weights: 0
+       Bone [10]: "Pierna.L" Weights: 0
+       Bone [11]: "Pie.L" Weights: 0
+       Bone [12]: "Muslo.R" Weights: 0
+       Bone [13]: "Pierna.R" Weights: 0
+       Bone [14]: "Pie.R" Weights: 0
+    -> Mesh: "Plano" Verts: 80 Bones: 15
+       Bone [0]: "Cadera" Weights: 0
+       Bone [1]: "Columna" Weights: 0
+       Bone [2]: "Cabeza" Weights: 40
+       Bone [3]: "Brazo.L" Weights: 0
+       Bone [4]: "Antebrazo.L" Weights: 20
+       Bone [5]: "Mano.L" Weights: 20
+       Bone [6]: "Brazo.R" Weights: 0
+       Bone [7]: "Antebrazo.R" Weights: 20
+       Bone [8]: "Mano.R" Weights: 20
+       Bone [9]: "Muslo.L" Weights: 0
+       Bone [10]: "Pierna.L" Weights: 0
+       Bone [11]: "Pie.L" Weights: 0
+       Bone [12]: "Muslo.R" Weights: 0
+       Bone [13]: "Pierna.R" Weights: 0
+       Bone [14]: "Pie.R" Weights: 0
+
+=== RAW MESH BOUNDS IN FBX ===
+Mesh [0] "Plano.001" Raw Vert Bounds: min(-0.19, -0.31, 1.6) max(0.19, 0.19, 1.72)
+Mesh [1] "Plano.004" Raw Vert Bounds: min(-0.07, -0.24, 0) max(0.07, 0.1, 0.262)
+Mesh [2] "Plano" Raw Vert Bounds: min(-0.21, -0.18, -1.49012e-08) max(0.21, 0.12, 0.08)
+Mesh [3] "Plano" Raw Vert Bounds: min(-0.21, -0.12, 0.08) max(0.21, 0.12, 0.7)
+Mesh [4] "Plano" Raw Vert Bounds: min(-0.21, -0.18, 0.7) max(0.21, 0.18, 1.66)
+Mesh [5] "Plano" Raw Vert Bounds: min(-0.68, -0.12, 1.08) max(0.68, 0.12, 1.26)
+Mesh [6] "Plano" Raw Vert Bounds: min(-0.77, -0.18, 1.08) max(0.77, 0.18, 1.66)
+
+=== ALL NODES MATRICES ===
+Node "RootNode":
+  [1, 0, 0, 0]
+  [0, 1, 0, 0]
+  [0, 0, 1, 0]
+  [0, 0, 0, 1]
+  Node "Esqueleto":
+    [1, 0, 0, 0]
+    [0, -1.62921e-07, 1, 0]
+    [0, -1, -1.62921e-07, 0]
+    [0, 0, 0, 1]
+    Node "Cadera":
+      [1, 0, 0, 0]
+      [0, -1.62921e-07, -1, 0]
+      [0, 1, -1.62921e-07, 0.7]
+      [0, 0, 0, 1]
+      Node "Columna":
+        [1, 0, 0, 0]
+        [0, 0.997256, -0.0740297, 0.2]
+        [0, 0.0740297, 0.997256, 0]
+        [0, 0, 0, 1]
+        Node "Cabeza":
+          [1, 0, 0, 0]
+          [0, 0.999894, -0.0145468, 0.33]
+          [0, 0.0145468, 0.999894, -9.31323e-09]
+          [0, 0, 0, 1]
+          Node "Gorra":
+            [1, 0, 0, 0]
+            [0, -1.62921e-07, 1, -1.23]
+            [0, -1, -1.62921e-07, 0]
+            [0, 0, 0, 1]
+        Node "Brazo.L":
+          [1.94707e-07, 0.192715, 0.981255, 0.21]
+          [0, -0.981255, 0.192715, 0.27]
+          [1, -3.75231e-08, -1.91057e-07, -1.86265e-09]
+          [0, 0, 0, 1]
+          Node "Antebrazo.L":
+            [1, 0, 0, 1.55534e-08]
+            [0, 1, 0, 0.24]
+            [0, 0, 1, 1.68475e-08]
+            [0, 0, 0, 1]
+            Node "Mano.L":
+              [1, 0, 0, 5.43469e-10]
+              [0, 1, 0, 0.23]
+              [0, 0, 1, 3.00934e-08]
+              [0, 0, 0, 1]
+        Node "Brazo.R":
+          [0.00377634, -0.192982, -0.981195, -0.21]
+          [-0.619305, -0.770839, 0.149225, 0.27]
+          [-0.785142, 0.607095, -0.122425, -1.86265e-09]
+          [0, 0, 0, 1]
+          Node "Antebrazo.R":
+            [0.986212, -0.16202, 0.0337018, 6.15837e-08]
+            [0.16202, 0.986784, 0.00274913, 0.24]
+            [-0.0337018, 0.00274915, 0.999428, 3.72529e-09]
+            [0, 0, 0, 1]
+            Node "Mano.R":
+              [1, 0, 0, -7.45058e-08]
+              [0, 1, 0, 0.23]
+              [0, 0, 1, -1.11759e-08]
+              [0, 0, 0, 1]
+              Node "Regadera":
+                [1.37313e-07, 1, -2.17174e-07, 0.00356251]
+                [-0.173648, -1.90031e-07, -0.984808, 0.260437]
+                [-0.984808, 1.72939e-07, 0.173648, -0.0213633]
+                [0, 0, 0, 1]
+      Node "Muslo.L":
+        [1, -5.87999e-14, 1.50996e-07, 0.11]
+        [0, -1, -3.89414e-07, 0]
+        [1.50996e-07, 3.89414e-07, -1, 0]
+        [0, 0, 0, 1]
+        Node "Pierna.L":
+          [1, 0, 0, 0]
+          [0, 1, 0, 0.32]
+          [0, 0, 1, 0]
+          [0, 0, 0, 1]
+          Node "Pie.L":
+            [1, 1.4243e-14, -8.74228e-08, 0]
+            [8.74228e-08, -1.62921e-07, 1, 0.3]
+            [0, -1, -1.62921e-07, 0]
+            [0, 0, 0, 1]
+      Node "Muslo.R":
+        [1, -5.87999e-14, 1.50996e-07, -0.11]
+        [0, -1, -3.89414e-07, 0]
+        [1.50996e-07, 3.89414e-07, -1, 0]
+        [0, 0, 0, 1]
+        Node "Pierna.R":
+          [1, 0, 0, 0]
+          [0, 1, 0, 0.32]
+          [0, 0, 1, 0]
+          [0, 0, 0, 1]
+          Node "Pie.R":
+            [1, -1.4243e-14, 8.74228e-08, 0]
+            [-8.74228e-08, -1.62921e-07, 1, 0.3]
+            [0, -1, -1.62921e-07, 0]
+            [0, 0, 0, 1]
+  Node "Personaje":
+    [1, 0, 0, 0]
+    [0, -1.62921e-07, 1, 0]
+    [0, -1, -1.62921e-07, 0]
+    [0, 0, 0, 1]
+
+=== BONE ANIMATION TEST FOR CAMINAR ===
+Animation: Esqueleto|Caminar Dur: 24 Ticks: 24
+--- Time t = 0 ---
+  Gorra pos: (0, 0, -8.34465e-08)
+  Regadera pos: (-0.3158, 0.489337, 0.24395)
+  Bone Muslo.L Pos: (0.11, 0.7, -8.34465e-08)
+  Bone Muslo.R Pos: (-0.11, 0.7, -8.34465e-08)
+  Bone Pierna.L Pos: (0.11, 0.409981, 0.135238)
+  Bone Pierna.R Pos: (-0.11, 0.409981, -0.135238)
+  Bone Pie.L Pos: (0.11, 0.138089, 0.262023)
+  Bone Pie.R Pos: (-0.11, 0.138089, -0.262024)
+  Jeans vertices sample:
+    Vert 0 raw:(0.01,-0.12,0.38) -> anim:(0.00953224,0.439146,0.232582) W=0.953224
+    Vert 10 raw:(0.21,0.12,0.08) -> anim:(0.205275,0.0854091,0.149818) W=0.977501
+    Vert 20 raw:(0.01,-0.12,0.38) -> anim:(0.00953224,0.439146,0.232582) W=0.953224
+    Vert 30 raw:(0.21,0.12,0.38) -> anim:(0.205216,0.351083,0.0258776) W=0.97722
+    Vert 40 raw:(-0.01,0.12,0.38) -> anim:(-0.00958475,0.441565,-0.233863) W=0.958475
+    Vert 50 raw:(-0.01,0.12,0.38) -> anim:(-0.00958475,0.441565,-0.233863) W=0.958475
+--- Time t = 6 ---
+  Gorra pos: (0, 0, -8.34465e-08)
+  Regadera pos: (-0.3158, 0.446951, -0.00356264)
+  Bone Muslo.L Pos: (0.11, 0.7, -8.34465e-08)
+  Bone Muslo.R Pos: (-0.11, 0.7, -8.34465e-08)
+  Bone Pierna.L Pos: (0.11, 0.38, -1.89424e-07)
+  Bone Pierna.R Pos: (-0.11, 0.38, -1.86007e-07)
+  Bone Pie.L Pos: (0.11, 0.08, -2.79726e-07)
+  Bone Pie.R Pos: (-0.11, 0.08, -2.9121e-07)
+  Jeans vertices sample:
+    Vert 0 raw:(0.01,-0.12,0.38) -> anim:(0.00953227,0.362225,0.114387) W=0.953224
+    Vert 10 raw:(0.21,0.12,0.08) -> anim:(0.205275,0.0782,-0.1173) W=0.977501
+    Vert 20 raw:(0.01,-0.12,0.38) -> anim:(0.00953227,0.362225,0.114387) W=0.953224
+    Vert 30 raw:(0.21,0.12,0.38) -> anim:(0.205216,0.371344,-0.117267) W=0.97722
+    Vert 40 raw:(-0.01,0.12,0.38) -> anim:(-0.00958477,0.364221,-0.115017) W=0.958475
+    Vert 50 raw:(-0.01,0.12,0.38) -> anim:(-0.00958477,0.364221,-0.115017) W=0.958475
+--- Time t = 12 ---
+  Gorra pos: (0, 0, -8.34465e-08)
+  Regadera pos: (-0.3158, 0.491774, -0.250645)
+  Bone Muslo.L Pos: (0.11, 0.7, -8.34465e-08)
+  Bone Muslo.R Pos: (-0.11, 0.7, -8.34465e-08)
+  Bone Pierna.L Pos: (0.11, 0.409981, -0.135238)
+  Bone Pierna.R Pos: (-0.11, 0.409981, 0.135238)
+  Bone Pie.L Pos: (0.11, 0.138089, -0.262024)
+  Bone Pie.R Pos: (-0.11, 0.138089, 0.262023)
+  Jeans vertices sample:
+    Vert 0 raw:(0.01,-0.12,0.38) -> anim:(0.00953229,0.342462,-0.0252424) W=0.953224
+    Vert 10 raw:(0.21,0.12,0.08) -> anim:(0.205275,0.184555,-0.362438) W=0.977501
+    Vert 20 raw:(0.01,-0.12,0.38) -> anim:(0.00953229,0.342462,-0.0252424) W=0.953224
+    Vert 30 raw:(0.21,0.12,0.38) -> anim:(0.205216,0.450201,-0.238437) W=0.97722
+    Vert 40 raw:(-0.01,0.12,0.38) -> anim:(-0.00958479,0.344349,0.0253811) W=0.958475
+    Vert 50 raw:(-0.01,0.12,0.38) -> anim:(-0.00958479,0.344349,0.0253811) W=0.958475
+--- Time t = 18 ---
+  Gorra pos: (0, 0, -8.34465e-08)
+  Regadera pos: (-0.3158, 0.446951, -0.00356264)
+  Bone Muslo.L Pos: (0.11, 0.7, -8.34465e-08)
+  Bone Muslo.R Pos: (-0.11, 0.7, -8.34465e-08)
+  Bone Pierna.L Pos: (0.11, 0.38, -1.89424e-07)
+  Bone Pierna.R Pos: (-0.11, 0.38, -1.86007e-07)
+  Bone Pie.L Pos: (0.11, 0.08, -2.79726e-07)
+  Bone Pie.R Pos: (-0.11, 0.08, -2.9121e-07)
+  Jeans vertices sample:
+    Vert 0 raw:(0.01,-0.12,0.38) -> anim:(0.00953227,0.362225,0.114387) W=0.953224
+    Vert 10 raw:(0.21,0.12,0.08) -> anim:(0.205275,0.0782,-0.1173) W=0.977501
+    Vert 20 raw:(0.01,-0.12,0.38) -> anim:(0.00953227,0.362225,0.114387) W=0.953224
+    Vert 30 raw:(0.21,0.12,0.38) -> anim:(0.205216,0.371344,-0.117267) W=0.97722
+    Vert 40 raw:(-0.01,0.12,0.38) -> anim:(-0.00958477,0.364221,-0.115017) W=0.958475
+    Vert 50 raw:(-0.01,0.12,0.38) -> anim:(-0.00958477,0.364221,-0.115017) W=0.958475

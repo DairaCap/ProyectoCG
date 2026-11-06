@@ -1,0 +1,868 @@
+--- Stream 1 (TJ) ---
+ 
+1
+ 
+ 
+FACULTAD DE INGENIER�A, UNAM
+ 
+COMPUTACI�N GR�FICA E 
+INTERACCI�N
+ 
+HUMANO
+-
+COMPUTADORA
+ 
+ESPECIFICACIONES DEL PROYECTO FINAL
+ 
+SEMESTRE 
+202
+7
+-
+1
+ 
+ 
+Dr
+. Sergio Teodoro Vite
+ 
+ 
+Objetivo:
+ 
+El proyecto final tiene por objetivo que el alumn
+ado
+ 
+demuestre, mediante el 
+planteamiento de un problema pr�ctico, la aplicaci�n de los conceptos adquiridos en 
+clase durante el semestre para generar un 
+sistema 
+gr�fico de calidad con base en un 
+an�lisis y dise�o riguros
+os
+; as� como incentivar 
+su
+ 
+participaci�n efectiva en equipos de 
+trabajo como parte de su formaci�n profesional.
+ 
+Objetivo
+s
+ 
+espec�ficos:
+ 
+ 
+El alumn
+ado
+ 
+aplicar� una metodolog�a estructurada para el desarrollo de un 
+proyecto 
+gr�fico
+ 
+interactivo
+ 
+que incorpore: planteamiento del problema, an�lisis, 
+dise�o, codificaci�n y pruebas del sistema. 
+ 
+ 
+El alumn
+ado
+ 
+usar� las diversas tecnolog�as dentro del campo del c�mputo gr�fico
+ 
+y dise�o de interfaces humano
+-
+computadora
+ 
+para la representaci�n 
+y 
+manipulaci�n 
+de datos en un �rea de aplicaci�n en particular, tales como: 
+medicina, f�sica, matem�ticas, geociencias, biolog�a, mec�nica, 
+telecomunicaciones
+, psicolog�a
+, cinematograf�a
+, entre otras
+, 
+para fines educativos
+, 
+de 
+entretenimiento 
+y/o de 
+investigaci�n
+.
+ 
+Descripci�n del proyecto
+:
+ 
+Desarrollar un 
+sistema
+ 
+gr�fico
+ 
+interactivo
+ 
+que ejemplifique la 
+aplicaci�n del pipeline gr�fico completo: conceptualizaci�n, modelado geom�trico, 
+an�lisis de color, texturizado, iluminaci�n, sombreado, animaci�n
+, simulaci�n, interacci�n y 
+renderizado para la representaci�n
+ 
+y manipulaci�n
+ 
+de datos en tres dimensiones,
+ 
+usando 
+la especificaci�n OpenGL 3 o superior.
+ 
+Metodolog�a de desarrollo:
+ 
+Usando una metodolog�a de desarrollo de 
+proyectos de 
+software consistente en
+:
+ 
+el 
+planteamiento del problema, an�lisis, dise�o, codificaci�n y pruebas del sistema, el 
+alumn
+ado
+ 
+formular�
+, desarrollar�
+ 
+y expondr� un proyecto donde aplique los conceptos 
+vistos en clase. 
+El proyecto deber� cumplir los siguientes lineamientos:
+ 
+1.
+ 
+Formular un equipo de trabajo de 
+hasta
+ 
+un m�ximo de
+ 
+5
+ 
+integrantes.
+ 
+2.
+ 
+Plantear 
+un tema de desarrollo que involucre el despliegue de datos en tres 
+dimensiones
+.
+ 
+El alumn
+ado
+ 
+generar� un primer prototipo de software gr�fico del 
+tema elegido que involucre: dise�o
+,
+ 
+modelado geom�trico
+ 
+y modelado jer�rquico
+, 
+transformaciones geom�tricas
+.
+ 
+ 
+3.
+ 
+Usar
+�
+ 
+el primer prototipo para aplicar t�cnicas de color, iluminaci�n, sombreado
+,
+ 
+texturizado
+ 
+y animaci�n
+ 
+para el despliegue de gr�ficos de alta calidad
+ 
+usando la 
+especificaci�n OpenGL3 o superior y GLSL. La representaci�n gr�fica deber� hacer 
+uso de al menos 
+dos
+ 
+t�cnica
+s
+ 
+de iluminaci�
+n; e
+jemplos
+:
+ 
+Phong para 
+representar 
+materiales opacos
+ 
+y
+ 
+Fresnel para 
+representar 
+materiales transl�cidos y 
+met�licos; as� 
+como una t�cnica de texturizado de ambiente \
+cube mapping
+, 
+environment 
+mapping
+, 
+sphere mapping
+, etc.\
+. Las animaciones deber�
+n
+ 
+ejemplificar 
+la 
+aplicaci�n
+ 
+de 
+jerarqu�as de las transformaciones
+ 
+en tres tipos principales:
+ 
+b�sica, 
+basada en keyframes y procedural
+.
+ 
+--- Stream 6 (TJ) ---
+ 
+2
+ 
+ 
+EVALUACI�N
+ 
+La evaluaci�n se realizar� considerando un enfoque integral que valore tanto los aspectos 
+de la implementaci�n t�cnica, la participaci�n de cada integrante del equipo y la 
+interacci�n de un supuesto usuario. Se evaluar� la calidad gr�fica del proyecto 
+cons
+iderando la implementaci�n de t�cnicas de renderizado, modelado y animaci�n, as� 
+como el rendimiento visual con iluminaci�n, texturizado y efectos visuales. Adem�s, se 
+probar� la efectividad de la interacci�n, analizando la usabilidad, claridad y 
+comprensi
+bilidad de los contenidos gr�ficos, asegurando que los usuarios puedan 
+interactuar de manera fluida y natural con el sistema. Es importante mencionar que, aun 
+siendo un desarrollo en equipo, la evaluaci�n se realiza de manera individual conforme a 
+las cont
+ribuciones de cada integrante. La contribuci�n de cada integrante estar� dada 
+por una tabla donde el equipo registrar� a lo largo del curso, la participaci�n de cada 
+miembro.
+ 
+Los entregables del proyecto son:
+ 
+ 
+5
+0% software funcional
+ 
+ 
+1
+0
+% reporte escrito en espa�ol
+ 
+ 
+1
+0
+% reporte escrito en ingl�s
+ 
+ 
+30
+% video demostrativo
+ 
+Entregables
+ 
+digitales
+ 
+finales
+:
+ 
+ 
+Software ejecutable funcional debidamente empaquetado en un archivo con 
+extensi�n *.exe. Se recomienda usar el software InstallForge para este prop�sito. El 
+software deber� poder ejecutarse en una computadora 
+con requerimientos 
+m�nimos para la ejecuci�n de programas con OpenGL 3.
+x o superior
+. 
+Incluir un 
+archivo 
+manual.pdf
+ 
+con las instrucciones de instalaci�n
+ 
+y uso del software
+. 
+NO SE 
+ENTREGA C�DIGO FUENTE
+, sin embargo, el c�digo fuente se revisar� a detalle 
+durante 
+las sesiones de 
+avances
+.
+ 
+No se aceptar�n proyectos comprimidos en 
+formatos comprimidos \ZIP, RAR, TAR, etc�tera\
+ 
+R�BRICA DE EVALUACI�N DEL EJECUTABLE
+ 
+Porcentaje
+ 
+El archivo se encuentra debidamente empaquetado en un solo 
+. 
+ 
+0.5
+ 
+El alumn
+ado
+ 
+proporciona un documento manual.pdf con las 
+instrucciones de instalaci�n y uso del software. Las instrucciones son 
+claras.
+ 
+0.5
+ 
+El software se instala correctamente
+ 
+0.5
+ 
+El software se ejecuta
+ 
+0.5
+ 
+El software es funcional y coherente con el manual y la idea
+ 
+0.5
+ 
+Se muestran 
+un
+a escena gr�fica con 
+al menos 
+80
+ 
+modelos geom�tricos
+ 
+de buena calidad gr�fica
+. 
+80
+% de 
+estos modelos son
+ 
+de creaci�n 
+original del alumn
+ado
+. 
+En el caso de modelos 3D de otros autores
+ 
+o 
+generados con IA
+, se hace referencia a la fuente original.
+ 
+ 
+2.0
+ 
+Se implementa
+n 
+al menos 
+dos
+ 
+modelo
+s
+ 
+de 
+control
+ 
+de c�mara
+ 
+\
+primera 
+persona, tercera persona
+,
+ 
+isom�trico
+, c�mara libre, etc.
+\
+ 
+1.0
+ 
+Se ejemplifican 
+la interacci�n con al menos 
+15
+ 
+elementos geom�tricos 
+de la escena \tomar un objeto, 
+rotarlo, trasladarlo, escalarlo
+\
+.
+ 
+1.0
+ 
+Se 
+ejemplifica la implementaci�n de
+ 
+materiales \opacos
+, 
+pl�sticos, 
+trasl�cidos y met�licos\
+. 
+ 
+1.0
+ 
+El texturizado de los modelos y de ambiente es de calidad y se 
+encuentra bien aplicado.
+ 
+0.5
+ 
+--- Stream 7 (TJ) ---
+ 
+3
+ 
+ 
+Se ejemplifican tres tipos de animaci�n: 
+10 animaciones 
+simple
+s
+, 
+5 
+animaciones 
+basada
+s
+ 
+en 
+cuadros clave
+ 
+y 
+5 animaciones 
+procedural
+es
+.
+ 
+2.0
+ 
+Total
+ 
+10.0
+ 
+ 
+ 
+Reporte en 
+espa�ol
+ 
+e ingl�s
+ 
+con las siguientes secciones: 
+ 
+o
+ 
+Portada con: 
+ 
+ 
+t�tulo, 
+ 
+ 
+fecha de entrega,
+ 
+ 
+nombre completo de autores iniciando por apellido paterno
+ 
+o
+ 
+Hoja para evidencias
+ 
+ 
+T�tulo del trabajo
+ 
+ 
+N�mero\s\ de cuenta del \los
+/las
+\
+participantes
+\s\
+ 
+o
+ 
+Cuerpo:
+ 
+ 
+Resumen \1 p�rrafo\
+ 
+ 
+Introducci�n con citas a las fuentes de informaci�n
+ 
+ 
+Metodolog�a pr�ctica
+ 
+ 
+Experimentos
+ 
+ 
+Resultados
+ 
+ 
+Conclusiones individuales para trabajos en equipo
+ 
+ 
+Referencias bibliogr�ficas en formato APA
+ 
+o
+ 
+Enlace a video demostrativo
+ 
+Notas:
+ 
+ 
+Fuente 12 puntos.
+ 
+ 
+Interlineado 1.5.
+ 
+ 
+Se sugiere usar Mendeley o Zotero para las referencias bibliogr�ficas
+ 
+ 
+Todas las figuras, tablas e ilustraciones deber�n estar tituladas y debidamente 
+referenciadas en el texto. Capturas de pantalla sin t�tulo disminuyen la calificaci�n 
+del reporte.
+ 
+ 
+Revisar gram�tica y ortograf�a antes de la entrega.
+ 
+ 
+Entregar en formato PDF en la 
+carpeta del proyecto
+.
+ 
+ 
+R�BRICA
+ 
+Referencia
+ 
+El alumn
+ado
+ 
+presenta una portada clara y formal, con referencias 
+institucionales, t�tulo visible, fecha de entrega y lista de autores con 
+informaci�n de contacto.
+ 
+Obligatorio 
+para 
+evaluaci�n
+ 
+El alumn
+ado
+ 
+presenta un resumen que describe de manera muy concreta 
+el tema del proyecto. El resumen incluye palabras clave que redirigen al 
+lector a ubicar el campo de estudio.
+ 
+Obligatorio 
+para 
+evaluaci�n
+ 
+El alumn
+ado
+ 
+realiz� una investigaci�n formal del estado del arte de su 
+proyecto y lo presenta bien fundamentado en la introducci�n, haciendo 
+referencia a las fuentes de informaci�n usando las normas APA. Presenta 
+un an�lisis econ�mico, social y �tico del tema de su p
+royecto.
+ 
+1.0
+ 
+El alumn
+ado
+ 
+presenta la metodolog�a que emple� para el desarrollo de la 
+pr�ctica, presentando algoritmos, diagramas de flujo, diagramas de 
+arquitecturas del programa, as� como requerimientos de hardware y 
+3.0
+ 
+--- Stream 8 (TJ) ---
+ 
+4
+ 
+ 
+software. Presenta segmentos de c�digo relevantes, figuras ilustrativas 
+debidamente tituladas y referenciadas en el texto. 
+ 
+El reporte deber� enlistar: 
+Modelos y sus estad�sticas
+, t�cnicas de 
+texturizado aplicadas, t�cnicas de iluminaci�n aplicadas, tipos de 
+animaci�n e interacciones presentes en el entorno 3D.
+ 
+El alumn
+ado
+ 
+presenta experimentos concretos efectuados, exitosos o 
+fallidos, mediante figuras y capturas de pantalla debidamente tituladas y 
+referenciadas en el cuerpo del reporte. 
+ 
+3.0
+ 
+El alumn
+ado
+ 
+presenta los resultados finales de los experimentos \versi�n 
+final\mediante figuras y capturas de pantalla debidamente tituladas y 
+referenciadas en el cuerpo del reporte.  Analiza las ventajas y desventajas 
+de la metodolog�a aplicada. El alumn
+ado
+ 
+realiza una discusi�n de los 
+resultados obtenidos comparado con otros desarrollos existentes, 
+reconociendo sus contribuciones y limitaciones.
+ 
+1.0
+ 
+El alumn
+ado
+ 
+es capaz de expresar sus conclusiones del trabajo realizado 
+de manera concreta y coherente, resumiendo en breves palabras c�mo 
+impact� la metodolog�a empleada en los resultados finales y posibles 
+mejoras a futuro.
+ 
+1.0
+ 
+El alumn
+ado
+ 
+presenta las referencias bibliogr�ficas en formato APA y las 
+cita correctamente en el cuerpo del reporte. Si sugiere otras fuentes no 
+ 
+Obligatorio 
+para 
+evaluaci�n
+ 
+El alumn
+ado
+ 
+incluye un enlace a un video demostrativo sobre el proyecto 
+final
+ 
+1.0
+ 
+Total:
+ 
+10.0
+ 
+ 
+ 
+Video 
+demostrativo de las funcionalidades del programa en formato MP4, en lo 
+posible con compresi�n H.264. Se recomienda usar el software Davinci Resolve de 
+Blackmagic para la edici�n de video. El v�deo debe incluir nombre del proyecto e 
+integrantes del equipo c
+omo parte de la secuencia.
+ 
+R�BRICA DE EVALUACI�N DEL VIDEO
+ 
+Porcentaje
+ 
+El video dura de 
+10
+ 
+a 
+1
+5 minutos
+ 
+de duraci�n en formato de 
+presentaci�n, documental y demo
+ 
+0.5
+ 
+El video se proporciona en formato MP4
+ 
+0.5
+ 
+El video es de buena calidad
+ 
+1
+.
+0
+ 
+El video incluye el nombre del proyecto y el nombre de los integrantes 
+del equipo
+ 
+0.5
+ 
+El video 
+inicia con
+ 
+la idea del proyecto
+ 
+1.0
+ 
+El alumnado hace uso de t�rminos t�cnicos para narrar el desarrollo 
+t�cnico del proyecto 
+ 
+2.0
+ 
+Se aborda el tema de la propuesta de manera clara y profesional
+ 
+3.0
+ 
+Se incluyen tomas del software funcionando
+ 
+1.0
+ 
+Se incluyen textos descriptivos de las principales caracter�sticas del 
+software
+ 
+0.5
+ 
+Total:
+ 
+10.0
+ 
+ 
+ 
+Todos los entregables digitales se subir�n al repositorio de Google drive dispuesto 
+para el tal fin. Consultar enlace en el 
+aula virtual
+.
+ 
+--- Stream 9 (TJ) ---
+ 
+5
+ 
+ 
+ 
+EJEMPLOS DE TEMAS PROPUESTOS PARA ABORDAR EN EL PROYECTO FINAL
+ 
+\Sugeridos conforme a la 
+Agenda de la Organizaci�n de las Naciones Unidas 
+para el Objetivo de Desarrollo Sostenible ONU 2030
+\
+ 
+ 
+Cambio clim�tico \Acci�n por el clima\
+ 
+o
+ 
+Deshielo
+ 
+o
+ 
+Deforestaci�n
+ 
+o
+ 
+Efecto invernadero
+ 
+o
+ 
+Residuos nucleares
+ 
+ 
+Generaci�n de energ�a
+ 
+o
+ 
+Educaci�n sobre el funcionamiento de plantas generadoras de 
+energ�a
+ 
+o
+ 
+E
+nerg�as limpias
+ 
+o
+ 
+Automatizaci�n en la generaci�n de energ�a
+ 
+o
+ 
+Energ�as renovables y no renovables
+ 
+ 
+Salud y bienestar
+ 
+o
+ 
+Recorridos virtuales en �reas hospitalarias
+ 
+o
+ 
+Entornos de sensibilizaci�n/educaci�n sobre enfermedades \COVID
+-
+19, Monkeypox. Diabetes, VIH/Sida, C�ncer, etc.\
+ 
+o
+ 
+Prevenci�n
+ 
+o
+ 
+Riesgos sanitarios
+ 
+o
+ 
+Salud mental
+ 
+ 
+Educaci�n de calidad
+ 
+o
+ 
+Museos interactivos de tem�tica libre
+ 
+o
+ 
+Tecnolog�as emergentes en educaci�n
+ 
+ 
+Igualdad e identidad de g�nero
+ 
+o
+ 
+Igualdad en el Ambiente laboral
+ 
+o
+ 
+V
+iolencia 
+intra
+familiar
+ 
+o
+ 
+Diversidad 
+ 
+ 
+Agua limpia y saneamiento
+ 
+o
+ 
+Entornos gr�ficos para concientizaci�n del cuidado del agua
+ 
+ 
+Vida submarina
+ 
+o
+ 
+Cuidado del medio marino
+ 
+o
+ 
+Educaci�n sobre la vida marina
+ 
+o
+ 
+Protecci�n de especies end�micas y en peligro
+ 
+ 
+Ciudades y comunidades sustentables
+ 
+o
+ 
+Dise�o de entornos gr�ficos para la interacci�n social sustentables
+ 
+o
+ 
+Dise�o de entornos gr�ficos para la vivienda sustentable
+ 
+o
+ 
+Dise�o de entornos gr�ficos para el transporte
+ 
