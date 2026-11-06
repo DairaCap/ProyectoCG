@@ -124,13 +124,14 @@ public:
 
         InteractiveWindow w0;
         w0.name = "Ventana_Deslizable.011";
-        w0.trackDir = glm::vec3(0.0f, 0.0f, 1.0f);
-        w0.closedCollider = AABB(glm::vec3(-5.35f, 0.0f, -3.45f), glm::vec3(-4.95f, 2.80f, -1.80f));
+        // La ventana está en una pared que corre a lo largo de X (z = -2.62): se desliza en -X, sobre el vidrio fijo vecino
+        w0.trackDir = glm::vec3(-1.0f, 0.0f, 0.0f);
+        w0.closedCollider = AABB(glm::vec3(-5.90f, 0.0f, -2.85f), glm::vec3(-4.42f, 2.80f, -2.40f));
         windows.push_back(w0);
 
         InteractiveWindow w1;
         w1.name = "Ventana_Deslizable.018";
-        w1.trackDir = glm::vec3(1.0f, 0.0f, 0.0f);
+        w1.trackDir = glm::vec3(-1.0f, 0.0f, 0.0f);      // Se desliza hacia -X, sobre el vidrio fijo (hacia +X solo hay pared)
         w1.closedCollider = AABB(glm::vec3(-1.30f, 0.0f, -4.85f), glm::vec3(0.45f, 2.80f, -4.50f));
         windows.push_back(w1);
     }
