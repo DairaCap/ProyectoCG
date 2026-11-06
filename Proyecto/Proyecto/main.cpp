@@ -28,6 +28,7 @@
 #include "light.h"
 #include "material.h"
 #include "AvatarController.h"
+#include "Muebles.h"
 
 // Dimensiones de ventana
 const unsigned int SCR_WIDTH = 1280;
@@ -46,8 +47,10 @@ GLFWwindow* window = nullptr;
 Shader* mainShader = nullptr;
 Shader* cubemapShader = nullptr;
 Shader* crosshairShader = nullptr;
+Shader* tarjetaShader = nullptr;        // Tarjetas informativas de plantas
 Model* casaModel = nullptr;
 Model* characterModel = nullptr;
+Muebles muebles;                       // Muebles, plantas y objetos de Romero (carpeta muebles/)
 CubeMap* mainCubeMap = nullptr;
 
 AvatarController avatarController;
@@ -81,7 +84,7 @@ struct LightSwitch {
 };
 std::vector<LightSwitch> gSwitches;
 
-enum InteractiveType { NONE_TYPE = 0, TYPE_DOOR, TYPE_WINDOW, TYPE_SWITCH };
+enum InteractiveType { NONE_TYPE = 0, TYPE_DOOR, TYPE_WINDOW, TYPE_SWITCH, TYPE_FURNITURE, TYPE_PLANT };
 
 struct RayHit {
     InteractiveType type = NONE_TYPE;
@@ -182,11 +185,42 @@ RayHit PerformRaycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float
             }
         }
     }
+    // Muebles con animación (clóset, cajones, laptop, estufa, refri...)
+    for (size_t i = 0; i < muebles.grupos.size(); ++i) {
+        float d = 0.0f;
+        AABB caja(muebles.grupos[i].caja.minPoint - glm::vec3(0.05f), muebles.grupos[i].caja.maxPoint + glm::vec3(0.05f));
+        if (RayIntersectsAABB(rayOrigin, rayDir, caja, closestHit.distance, d)) {
+            closestHit.type = TYPE_FURNITURE;
+            closestHit.index = i;
+            closestHit.distance = d;
+            closestHit.prompt = "[Click / E] " + muebles.Nombre(i) + ": " + (muebles.grupos[i].abierto ? "CERRAR" : "ABRIR");
+        }
+    }
+    // Plantas con tarjeta informativa
+    for (size_t i = 0; i < muebles.plantas.size(); ++i) {
+        float d = 0.0f;
+        AABB caja(muebles.plantas[i].caja.minPoint - glm::vec3(0.10f), muebles.plantas[i].caja.maxPoint + glm::vec3(0.10f));
+        if (RayIntersectsAABB(rayOrigin, rayDir, caja, closestHit.distance, d)) {
+            closestHit.type = TYPE_PLANT;
+            closestHit.index = i;
+            closestHit.distance = d;
+            std::string n = muebles.plantas[i].nombre.substr(7);   // Quita "Planta_"
+            closestHit.prompt = "[Click / E] " + n + ": " + (muebles.tarjetaActiva == (int)i ? "CERRAR TARJETA" : "VER TARJETA");
+        }
+    }
     return closestHit;
 }
 
 void InteractWithHovered()
 {
+    if (currentHit.type == TYPE_PLANT) {
+        muebles.ToggleTarjeta(currentHit.index);
+        return;
+    }
+    if (muebles.tarjetaActiva >= 0) {           // Click en otra cosa: se cierra la tarjeta abierta
+        muebles.tarjetaActiva = -1;
+        if (currentHit.type == NONE_TYPE) return;
+    }
     if (currentHit.type == TYPE_SWITCH) {
         size_t idx = currentHit.index;
         if (idx < gSwitches.size()) {
@@ -201,6 +235,9 @@ void InteractWithHovered()
     }
     else if (currentHit.type == TYPE_DOOR) {
         if (casaModel) casaModel->ToggleDoor(currentHit.index);
+    }
+    else if (currentHit.type == TYPE_FURNITURE) {
+        muebles.Toggle(currentHit.index);
     }
     else if (currentHit.type == TYPE_WINDOW) {
         if (casaModel) casaModel->ToggleWindow(currentHit.index);
@@ -244,6 +281,7 @@ bool Start()
     mainShader = new Shader("shaders/11_PhongShaderMultLights.vs", "shaders/11_PhongShaderMultLights.fs");
     cubemapShader = new Shader("shaders/10_vertex_cubemap.vs", "shaders/10_fragment_cubemap.fs");
     crosshairShader = new Shader("shaders/crosshair.vs", "shaders/crosshair.fs");
+    tarjetaShader = new Shader("shaders/tarjeta.vs", "shaders/tarjeta.fs");
 
     float crosshairVertices[] = { -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f };
     glGenVertexArrays(1, &crosshairVAO);
@@ -285,6 +323,9 @@ bool Start()
     else { houseModelPath = "../Casa_coliciones3.fbx"; }
 
     casaModel = new Model(houseModelPath, true);
+
+    // Muebles, plantas y objetos (carpeta muebles/ junto al ejecutable o un nivel arriba)
+    if (!muebles.Cargar("muebles")) muebles.Cargar("../muebles");
 
     std::string charPath = "personaje_estudiante.fbx";
     fCheck = fopen(charPath.c_str(), "rb");
@@ -423,7 +464,10 @@ bool Update()
 
     if (casaModel) {
         casaModel->UpdateAnimations(deltaTime);
-        camera.UpdatePhysics(deltaTime, casaModel->GetActiveColliders());
+        std::vector<AABB> colliders = casaModel->GetActiveColliders();
+        colliders.insert(colliders.end(), muebles.colisiones.begin(), muebles.colisiones.end());   // Muebles que bloquean el paso
+        camera.UpdatePhysics(deltaTime, colliders);
+        muebles.Update(deltaTime);
     }
 
     if (characterModel) {
@@ -463,12 +507,23 @@ bool Update()
             SetLightUniformFloat(mainShader, "distance", i, gLights[i].distance);
         }
 
+        // Cubemap para reflejos (metales, espejo) y Fresnel (vidrio, agua). Antes nunca se le pasaba al shader,
+        // por eso hasSkybox quedaba en false y no habia reflejo. Va en la unidad 7 para no chocar con las texturas del mesh.
+        if (mainCubeMap) {
+            glActiveTexture(GL_TEXTURE7);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, mainCubeMap->textureID);
+            glActiveTexture(GL_TEXTURE0);
+            mainShader->setInt("skybox", 7);
+            mainShader->setBool("hasSkybox", true);
+        }
+
         mainShader->setBool("spotLightOn", spotLightOn);
         mainShader->setVec3("spotLightPos", camera.GetEyePosition());
         mainShader->setVec3("spotLightDir", camera.Front);
         mainShader->setVec4("spotLightColor", glm::vec4(1.0f, 0.98f, 0.88f, 1.0f));
 
         if (casaModel) casaModel->Draw(*mainShader);
+        muebles.Draw(*mainShader);                 // Muebles, plantas y objetos con sus animaciones
 
         for (size_t s = 0; s < gSwitches.size(); ++s) {
             const auto& sw = gSwitches[s];
@@ -512,6 +567,8 @@ bool Update()
     else {
         glfwSetWindowTitle(window, "Hogar Botanico 3D");
     }
+
+    if (tarjetaShader) muebles.DibujarTarjeta(*tarjetaShader, (float)SCR_WIDTH, (float)SCR_HEIGHT);   // Tarjeta de la planta (a la derecha)
 
     glfwSwapBuffers(window);
     glfwPollEvents();

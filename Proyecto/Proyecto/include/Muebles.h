@@ -1,0 +1,240 @@
+// Muebles.h - Muebles, plantas y objetos de Romero (carpeta muebles/) para el programa de la casa.
+//
+// Carga muebles/Muebles.fbx con la clase Model del equipo y le agrega:
+//   * animaciones por pieza (puertas de clóset y refri, cajones, tapa de laptop, puerta de estufa, plato
+//     giratorio del microondas), leídas de muebles/animaciones.csv. Cada fila trae el pivote y el eje
+//     en ejes de OpenGL (Y arriba), generados desde Blender con exportar_muebles.py.
+//   * cajas de interacción (grupos.csv) para apuntarles con la mira y abrir/cerrar con clic o E.
+//   * cajas de colisión (colisiones.csv) que se suman a las de la casa.
+#ifndef MUEBLES_H
+#define MUEBLES_H
+
+#include <string>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <algorithm>
+#include <cmath>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <glad/glad.h>
+#include <stb_image.h>
+
+#include "model.h"
+#include "AABB.h"
+
+// Una pieza que se mueve (por ejemplo "Closet_H1__Closet_PuertaIzq")
+struct PiezaAnimada {
+    std::string nodo;       // Nombre del nodo en el FBX
+    std::string grupo;      // Mueble al que pertenece (todas sus piezas se mueven juntas)
+    std::string tipo;       // "rotacion", "traslacion" o "giro_continuo"
+    glm::vec3 pivote;       // Bisagra, en el mundo
+    glm::vec3 eje;          // Eje de giro o dirección de deslizamiento
+    float valor;            // Grados (rotación) o metros (traslación) con el mueble "abierto"
+};
+
+// Un mueble con animación (su caja sirve para apuntarle y para saber si está abierto)
+struct GrupoMueble {
+    std::string nombre;
+    AABB caja;
+    bool abierto = false;
+    float progreso = 0.0f;  // 0 = estado inicial, 1 = estado alterno
+};
+
+// Planta con tarjeta informativa (imagen en muebles/tarjetas/N.png)
+struct PlantaTarjeta {
+    std::string nombre;     // Por ejemplo "Planta_Rosal"
+    int tarjeta;            // Numero de la imagen
+    AABB caja;              // Para apuntarle con la mira
+    GLuint textura = 0;     // Se carga al iniciar
+    float aspecto = 0.45f;  // ancho / alto de la imagen
+};
+
+class Muebles {
+public:
+    std::vector<PlantaTarjeta> plantas;
+    int tarjetaActiva = -1;         // Indice de la planta cuya tarjeta se muestra (-1 = ninguna)
+    GLuint tarjetaVAO = 0, tarjetaVBO = 0;
+
+    Model* modelo = nullptr;
+    std::vector<PiezaAnimada> piezas;
+    std::vector<GrupoMueble> grupos;
+    std::vector<AABB> colisiones;
+    float tiempo = 0.0f;
+
+    // Carga todo desde una carpeta (por ejemplo "muebles"). Regresa false si no la encuentra.
+    bool Cargar(const std::string& carpeta) {
+        std::ifstream prueba(carpeta + "/Muebles.fbx", std::ios::binary);
+        if (!prueba) { std::cout << "[Muebles] No se encontro " << carpeta << "/Muebles.fbx" << std::endl; return false; }
+        prueba.close();
+
+        modelo = new Model(carpeta + "/Muebles.fbx", true);      // true = el FBX viene con Z arriba, igual que la casa
+
+        for (auto& f : LeerCSV(carpeta + "/animaciones.csv")) {
+            if (f.size() < 10) continue;
+            PiezaAnimada p;
+            p.nodo = f[0]; p.grupo = f[1]; p.tipo = f[2];
+            p.pivote = glm::vec3(std::stof(f[3]), std::stof(f[4]), std::stof(f[5]));
+            p.eje = glm::vec3(std::stof(f[6]), std::stof(f[7]), std::stof(f[8]));
+            p.valor = std::stof(f[9]);
+            piezas.push_back(p);
+        }
+        for (auto& f : LeerCSV(carpeta + "/grupos.csv")) {
+            if (f.size() < 7) continue;
+            GrupoMueble g;
+            g.nombre = f[0];
+            g.caja = AABB(glm::vec3(std::stof(f[1]), std::stof(f[2]), std::stof(f[3])),
+                          glm::vec3(std::stof(f[4]), std::stof(f[5]), std::stof(f[6])));
+            grupos.push_back(g);
+        }
+        for (auto& f : LeerCSV(carpeta + "/colisiones.csv")) {
+            if (f.size() < 7) continue;
+            colisiones.push_back(AABB(glm::vec3(std::stof(f[1]), std::stof(f[2]), std::stof(f[3])),
+                                      glm::vec3(std::stof(f[4]), std::stof(f[5]), std::stof(f[6]))));
+        }
+        for (auto& f : LeerCSV(carpeta + "/plantas.csv")) {
+            if (f.size() < 8) continue;
+            PlantaTarjeta pl;
+            pl.nombre = f[0]; pl.tarjeta = std::stoi(f[1]);
+            pl.caja = AABB(glm::vec3(std::stof(f[2]), std::stof(f[3]), std::stof(f[4])),
+                           glm::vec3(std::stof(f[5]), std::stof(f[6]), std::stof(f[7])));
+            pl.textura = CargarImagen(carpeta + "/tarjetas/" + f[1] + ".png", pl.aspecto);
+            plantas.push_back(pl);
+        }
+        // Rectangulo unitario (2 triangulos) para dibujar la tarjeta en pantalla
+        float quad[] = { 0,0, 1,0, 1,1,  0,0, 1,1, 0,1 };
+        glGenVertexArrays(1, &tarjetaVAO);
+        glGenBuffers(1, &tarjetaVBO);
+        glBindVertexArray(tarjetaVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, tarjetaVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+        glBindVertexArray(0);
+
+        std::cout << "[Muebles] " << plantas.size() << " plantas con tarjeta | " << modelo->meshes.size() << " mallas | " << piezas.size()
+                  << " piezas animadas | " << grupos.size() << " muebles interactivos | "
+                  << colisiones.size() << " colisiones" << std::endl;
+        return true;
+    }
+
+    // Abre o cierra un mueble (todas sus piezas)
+    void Toggle(size_t g) {
+        if (g >= grupos.size()) return;
+        grupos[g].abierto = !grupos[g].abierto;
+        std::cout << "[Interaccion] " << grupos[g].nombre << ": " << (grupos[g].abierto ? "ABIERTO" : "CERRADO") << std::endl;
+    }
+
+    // Avanza las animaciones suavemente hacia su estado objetivo
+    void Update(float dt) {
+        tiempo += dt;
+        for (auto& g : grupos) {
+            float objetivo = g.abierto ? 1.0f : 0.0f;
+            g.progreso += (objetivo - g.progreso) * std::min(dt * 5.0f, 1.0f);
+        }
+    }
+
+    // Texto para mostrar al apuntar (por ejemplo "Closet H1")
+    std::string Nombre(size_t g) const {
+        std::string n = grupos[g].nombre;
+        std::replace(n.begin(), n.end(), '_', ' ');
+        return n;
+    }
+
+    void Draw(Shader& shader) {
+        if (!modelo) return;
+        for (auto& m : modelo->meshes) {
+            glm::mat4 transformacion = m.nodeTransform;
+            for (const auto& p : piezas) {
+                if (p.nodo != m.nodeName) continue;
+                float t = ProgresoDe(p.grupo);
+                glm::mat4 anim(1.0f);
+                if (p.tipo == "rotacion")
+                    anim = glm::translate(glm::mat4(1.0f), p.pivote)
+                         * glm::rotate(glm::mat4(1.0f), glm::radians(p.valor * t), p.eje)
+                         * glm::translate(glm::mat4(1.0f), -p.pivote);
+                else if (p.tipo == "traslacion")
+                    anim = glm::translate(glm::mat4(1.0f), p.eje * (p.valor * t));
+                else if (p.tipo == "giro_continuo" && ProgresoDe(p.grupo) < 0.1f)   // El plato gira mientras la puerta está cerrada
+                    anim = glm::translate(glm::mat4(1.0f), p.pivote)
+                         * glm::rotate(glm::mat4(1.0f), tiempo * glm::radians(p.valor), p.eje)
+                         * glm::translate(glm::mat4(1.0f), -p.pivote);
+                transformacion = anim * transformacion;
+                break;
+            }
+            shader.setMat4("model", transformacion);
+            m.Draw(shader);
+        }
+    }
+
+    // Muestra la tarjeta de la planta i; si ya estaba abierta, la cierra
+    void ToggleTarjeta(size_t i) {
+        if (i >= plantas.size()) return;
+        tarjetaActiva = (tarjetaActiva == (int)i) ? -1 : (int)i;
+        std::cout << "[Tarjeta] " << plantas[i].nombre << (tarjetaActiva >= 0 ? ": MOSTRADA" : ": CERRADA") << std::endl;
+    }
+
+    // Dibuja la tarjeta activa a la derecha de la pantalla (ocupa 90 % del alto). shader = tarjeta.vs/.fs
+    void DibujarTarjeta(Shader& shader, float anchoPantalla, float altoPantalla) {
+        if (tarjetaActiva < 0 || tarjetaActiva >= (int)plantas.size() || plantas[tarjetaActiva].textura == 0) return;
+        const PlantaTarjeta& pl = plantas[tarjetaActiva];
+        float altoNDC = 1.8f;                                         // 90 % del alto (la pantalla mide 2 en NDC)
+        float anchoNDC = altoNDC * pl.aspecto * altoPantalla / anchoPantalla * 1.0f;
+        float x1 = 0.97f, x0 = x1 - anchoNDC, y0 = -0.9f, y1 = 0.9f;
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        shader.use();
+        shader.setVec4("uRect", glm::vec4(x0, y0, x1, y1));
+        shader.setInt("uTarjeta", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pl.textura);
+        glBindVertexArray(tarjetaVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+        glEnable(GL_DEPTH_TEST);
+    }
+
+private:
+    static GLuint CargarImagen(const std::string& ruta, float& aspecto) {
+        int w, h, c;
+        unsigned char* px = stbi_load(ruta.c_str(), &w, &h, &c, 4);       // Siempre RGBA
+        if (!px) { std::cout << "[Muebles] No se pudo cargar " << ruta << std::endl; return 0; }
+        GLuint t; glGenTextures(1, &t);
+        glBindTexture(GL_TEXTURE_2D, t);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        stbi_image_free(px);
+        aspecto = (float)w / (float)h;
+        return t;
+    }
+
+    float ProgresoDe(const std::string& grupo) const {
+        for (const auto& g : grupos) if (g.nombre == grupo) return g.progreso;
+        return 0.0f;
+    }
+
+    static std::vector<std::vector<std::string>> LeerCSV(const std::string& ruta) {
+        std::vector<std::vector<std::string>> filas;
+        std::ifstream f(ruta);
+        std::string linea;
+        bool primera = true;
+        while (std::getline(f, linea)) {
+            if (primera) { primera = false; continue; }     // Encabezado
+            if (!linea.empty() && linea.back() == '\r') linea.pop_back();
+            std::vector<std::string> campos; std::stringstream ss(linea); std::string c;
+            while (std::getline(ss, c, ',')) campos.push_back(c);
+            if (!campos.empty()) filas.push_back(campos);
+        }
+        return filas;
+    }
+};
+
+#endif

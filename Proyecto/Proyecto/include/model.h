@@ -646,7 +646,41 @@ private:
             meshMat.transparency = opacity;
         }
 
-        if (diffuseMaps.size() > 0) {
+        // Materiales de los muebles de Romero: se reconocen por el nombre del material (aunque lleven textura)
+        // para que el shader los trate como metal, vidrio/agua o plastico/ceramica y no como opacos.
+        string nombreMin = materialName;
+        std::transform(nombreMin.begin(), nombreMin.end(), nombreMin.begin(), ::tolower);
+        bool conTextura = diffuseMaps.size() > 0;
+        if (nombreMin.find("acero") != string::npos || nombreMin.find("laton") != string::npos || nombreMin.find("espejo") != string::npos) {
+            // Metalico: brillo muy nitido + reflejo del cubemap (espejo y manijas mas pulidos que el acero)
+            bool pulido = (nombreMin.find("manija") != string::npos || nombreMin.find("laton") != string::npos || nombreMin.find("espejo") != string::npos);
+            meshMat.diffuse = conTextura ? glm::vec4(1.0f) : glm::vec4(glm::vec3(meshMat.diffuse) * 0.6f, 1.0f);
+            meshMat.ambient = glm::vec4(0.15f, 0.15f, 0.16f, 1.0f);
+            meshMat.specular = glm::vec4(0.90f, 0.90f, 0.92f, 1.0f);
+            meshMat.transparency = 1.0f;
+            meshMat.type = MAT_METALICO;
+            meshMat.shininess = pulido ? 128.0f : 64.0f;
+        }
+        else if (nombreMin.find("agua") != string::npos || nombreMin.find("vidrio") != string::npos || nombreMin.find("cristal") != string::npos) {
+            // Traslucido: transparencia + Fresnel con el entorno
+            meshMat.diffuse = glm::vec4(0.70f, 0.85f, 0.95f, 0.35f);
+            meshMat.ambient = glm::vec4(0.30f, 0.40f, 0.50f, 0.35f);
+            meshMat.specular = glm::vec4(0.95f, 0.95f, 0.95f, 1.0f);
+            meshMat.transparency = 0.35f;
+            meshMat.type = MAT_TRASLUCIDO;
+            meshMat.shininess = 128.0f;
+        }
+        else if (nombreMin.find("ceramica") != string::npos || nombreMin.find("cer\xC3\xA1mica") != string::npos ||
+                 nombreMin.find("fruta") != string::npos || nombreMin.find("plastico") != string::npos) {
+            // Plastico / ceramica vidriada: color propio y brillo blanco concentrado
+            meshMat.diffuse = conTextura ? glm::vec4(1.0f) : meshMat.diffuse;
+            meshMat.ambient = glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
+            meshMat.specular = glm::vec4(0.90f, 0.90f, 0.90f, 1.0f);
+            meshMat.transparency = 1.0f;
+            meshMat.type = MAT_PLASTICO;
+            meshMat.shininess = 80.0f;
+        }
+        else if (diffuseMaps.size() > 0) {
             meshMat.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             meshMat.ambient = glm::vec4(0.35f, 0.35f, 0.35f, 1.0f);
             meshMat.specular = glm::vec4(0.25f, 0.25f, 0.25f, 1.0f);

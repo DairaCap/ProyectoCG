@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|C:\\USERS\\DAIRA\\DOCUMENTS\\COMPUG\\PROYECTO\\PROYECTO\\INCLUDE\\AVATARCONTROLLER.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|solutionrelative:INCLUDE\\AVATARCONTROLLER.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|solutionrelative:main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|C:\\USERS\\DAIRA\\DOCUMENTS\\COMPUG\\PROYECTO\\PROYECTO\\INCLUDE\\AVATARCONTROLLER.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|solutionrelative:INCLUDE\\AVATARCONTROLLER.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{6AE31095-19D9-41BC-B1C2-96916DA2E830}|Proyecto.vcxproj|C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\include\\model.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
@@ -34,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Document",
@@ -74,13 +74,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "AvatarController.h",
               "DocumentMoniker": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\include\\AvatarController.h",
               "RelativeDocumentMoniker": "include\\AvatarController.h",
               "ToolTip": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\include\\AvatarController.h",
               "RelativeToolTip": "include\\AvatarController.h",
-              "ViewState": "AgIAAFEAAAAAAAAAAAAAAH4BAAAGAAAAAAAAAA==",
+              "ViewState": "AgIAAIcAAAAAAAAAAAAAAFoAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2026-11-06T00:30:59.583Z",
               "EditorCaption": ""
@@ -99,15 +99,16 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "main.cpp",
               "DocumentMoniker": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\main.cpp",
               "RelativeDocumentMoniker": "main.cpp",
               "ToolTip": "C:\\Users\\daira\\Documents\\CompuG\\Proyecto\\Proyecto\\main.cpp",
               "RelativeToolTip": "main.cpp",
-              "ViewState": "AgIAALoAAAAAAAAAAAAAAMkAAAAsAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAMIAAAAkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2026-11-06T00:07:55.217Z"
+              "WhenOpened": "2026-11-06T00:07:55.217Z",
+              "EditorCaption": ""
             }
           ]
         }
