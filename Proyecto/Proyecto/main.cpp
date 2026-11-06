@@ -43,6 +43,18 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 GLFWwindow* window = nullptr;
 
+// Pantalla de inicio con los controles (imagen muebles/pantalla_inicio.png)
+bool pantallaInicio = true;      // true = se muestra y el mouse queda libre
+GLuint texInicio = 0;
+bool keyEnterPressed = false, keyHPressed = false;
+
+// Muestra u oculta la pantalla de inicio: al mostrarla se libera el mouse, al ocultarla se captura de nuevo
+void MostrarPantallaInicio(bool mostrar) {
+    pantallaInicio = mostrar;
+    glfwSetInputMode(window, GLFW_CURSOR, mostrar ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+    firstMouse = true;           // Evita un salto de cámara al volver
+}
+
 // Recursos gráficos
 Shader* mainShader = nullptr;
 Shader* cubemapShader = nullptr;
@@ -340,6 +352,9 @@ bool Start()
 
     // Muebles, plantas y objetos (carpeta muebles/ junto al ejecutable o un nivel arriba)
     if (!muebles.Cargar("muebles")) muebles.Cargar("../muebles");
+    texInicio = muebles.CargarTextura("muebles/pantalla_inicio.png");
+    if (!texInicio) texInicio = muebles.CargarTextura("../muebles/pantalla_inicio.png");
+    MostrarPantallaInicio(true);    // Arranca mostrando los controles con el mouse libre
 
     std::string charPath = "personaje_estudiante.fbx";
     fCheck = fopen(charPath.c_str(), "rb");
@@ -476,7 +491,7 @@ bool Update()
 
     processInput(window);
 
-    if (casaModel) {
+    if (casaModel && !pantallaInicio) {
         casaModel->UpdateAnimations(deltaTime);
         std::vector<AABB> colliders = casaModel->GetActiveColliders();
         colliders.insert(colliders.end(), muebles.colisiones.begin(), muebles.colisiones.end());   // Muebles que bloquean el paso
@@ -484,11 +499,12 @@ bool Update()
         muebles.Update(deltaTime);
     }
 
-    if (characterModel) {
+    if (characterModel && !pantallaInicio) {
         avatarController.Update(deltaTime, camera.isMoving, characterModel);
     }
 
-    currentHit = PerformRaycast(camera.GetEyePosition(), camera.Front, 3.8f);
+    if (pantallaInicio) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla
+    else currentHit = PerformRaycast(camera.GetEyePosition(), camera.Front, 3.8f);
 
     if (!dayNightCyclePaused) dayTimeProgression += deltaTime * 0.05f;
     float sunY = std::sin(dayTimeProgression) * 35.0f;
@@ -582,7 +598,8 @@ bool Update()
         glfwSetWindowTitle(window, "Hogar Botanico 3D");
     }
 
-    if (tarjetaShader) muebles.DibujarTarjeta(*tarjetaShader, (float)SCR_WIDTH, (float)SCR_HEIGHT);   // Tarjeta de la planta (a la derecha)
+    if (tarjetaShader && pantallaInicio) muebles.DibujarRect(*tarjetaShader, texInicio, -1.0f, -1.0f, 1.0f, 1.0f);   // Pantalla de inicio a todo lo ancho
+    else if (tarjetaShader) muebles.DibujarTarjeta(*tarjetaShader, (float)SCR_WIDTH, (float)SCR_HEIGHT);   // Tarjeta de la planta (a la derecha)
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -592,6 +609,19 @@ bool Update()
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+
+    // Pantalla de inicio: ENTER la cierra; H la vuelve a mostrar (libera el mouse). Mientras se ve, nada más responde.
+    if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS) {
+        if (!keyEnterPressed && pantallaInicio) MostrarPantallaInicio(false);
+        keyEnterPressed = true;
+    }
+    else keyEnterPressed = false;
+    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+        if (!keyHPressed) MostrarPantallaInicio(!pantallaInicio);
+        keyHPressed = true;
+    }
+    else keyHPressed = false;
+    if (pantallaInicio) { camera.isMoving = false; return; }
 
     camera.isMoving = false;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -632,7 +662,10 @@ void processInput(GLFWwindow* window)
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) InteractWithHovered();
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        if (pantallaInicio) MostrarPantallaInicio(false);     // Clic para iniciar el recorrido
+        else InteractWithHovered();
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -640,12 +673,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (pantallaInicio) return;      // Con el mouse libre la cámara no gira
     if (firstMouse) { lastX = (float)xpos; lastY = (float)ypos; firstMouse = false; }
     camera.ProcessMouseMovement((float)xpos - lastX, lastY - (float)ypos);
     lastX = (float)xpos; lastY = (float)ypos;
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (pantallaInicio) return;
     camera.ProcessMouseScroll((float)yoffset);
 }
 

@@ -233,6 +233,25 @@ public:
         }
     }
 
+    // Carga una imagen como textura (por ejemplo la pantalla de inicio); regresa 0 si no la encuentra
+    GLuint CargarTextura(const std::string& ruta) { float a; return CargarImagen(ruta, a); }
+
+    // Dibuja una textura en un rectángulo de pantalla (coordenadas -1 a 1) con el shader tarjeta.vs/.fs
+    void DibujarRect(Shader& shader, GLuint textura, float x0, float y0, float x1, float y1) {
+        if (textura == 0) return;
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        shader.use();
+        shader.setVec4("uRect", glm::vec4(x0, y0, x1, y1));
+        shader.setInt("uTarjeta", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textura);
+        glBindVertexArray(tarjetaVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+        glEnable(GL_DEPTH_TEST);
+    }
+
     // Dispara la secuencia de keyframes i (si ya corre, no hace nada)
     void ReproducirClip(size_t i) {
         if (i >= clips.size() || clips[i].activo) return;
