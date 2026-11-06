@@ -319,10 +319,11 @@ public:
 
     void ProcessMouseScroll(float yoffset)
     {
-        if (Zoom >= 1.0f && Zoom <= 45.0f)
-            Zoom -= yoffset;
-        if (Zoom <= 1.0f)
-            Zoom = 1.0f;
+        // Zoom con la rueda del mouse: cambia el campo de visión (más grados = más lejos).
+        // Se limita entre 30° (muy cerca) y 80° (muy abierto); la vista inicial es de 68°.
+        Zoom -= yoffset * 3.0f;
+        if (Zoom < 30.0f) Zoom = 30.0f;
+        if (Zoom > 80.0f) Zoom = 80.0f;
     }
 
 private:
