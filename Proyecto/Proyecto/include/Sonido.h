@@ -21,11 +21,13 @@ public:
     static constexpr const char* ARCHIVO_CASA    = "Stillness.mp3";             // Ambiente de adentro
     static constexpr const char* ARCHIVO_BOSQUE  = "naturaleza_bosque.mp3";     // Ambiente de afuera
     static constexpr const char* ARCHIVO_PASOS   = "Footsteps.mp3";
+    static constexpr const char* ARCHIVO_PUERTA  = "puerta_rechina.mp3";       // Puertas y cajones al abrir o cerrar
 
     // Volumenes (0 a 1)
     static constexpr float VOL_CASA   = 0.50f;
     static constexpr float VOL_BOSQUE = 0.70f;
     static constexpr float VOL_PASOS  = 0.60f;
+    static constexpr float VOL_PUERTA = 0.80f;
 
     // Rectangulo de la casa en el plano (x, z) del juego, medido del modelo. Se usa para saber que tan adentro esta el jugador.
     static constexpr float CASA_MIN_X = -9.25f, CASA_MAX_X = 7.29f;
@@ -36,6 +38,7 @@ public:
         if (casa) casa->drop();
         if (bosque) bosque->drop();
         if (pasos) pasos->drop();
+        if (efectoPuerta) efectoPuerta->drop();
         if (motor) motor->drop();
     }
 
@@ -48,6 +51,9 @@ public:
         casa   = Reproducir(carpeta + "/" + ARCHIVO_CASA, false);
         bosque = Reproducir(carpeta + "/" + ARCHIVO_BOSQUE, false);
         pasos  = Reproducir(carpeta + "/" + ARCHIVO_PASOS, true);                              // Empieza en pausa
+        rutaPuerta = carpeta + "/" + ARCHIVO_PUERTA;
+        fuentePuerta = motor->getSoundSource(rutaPuerta.c_str());          // Se carga en memoria una sola vez
+        if (fuentePuerta) { fuentePuerta->setStreamMode(irrklang::ESM_NO_STREAMING); fuentePuerta->setForcedStreamingThreshold(0); }
         if (casa) casa->setVolume(0.0f);
         if (bosque) bosque->setVolume(0.0f);
         if (pasos) pasos->setVolume(0.0f);
@@ -65,6 +71,14 @@ public:
         fuente->setForcedStreamingThreshold(0);              // 0 = nunca forzar streaming por tamano
         // play2D(fuente, bucle, empezarEnPausa, rastrear): rastrear = true para poder cambiar el volumen despues
         return motor->play2D(fuente, true, empezarEnPausa, true);
+    }
+
+    // Efecto de puerta o cajon (una sola vez, no en bucle). Si el anterior sigue sonando se corta para que no se encimen.
+    void Puerta() {
+        if (!motor || !fuentePuerta) return;
+        if (efectoPuerta) { efectoPuerta->stop(); efectoPuerta->drop(); efectoPuerta = nullptr; }
+        efectoPuerta = motor->play2D(fuentePuerta, false, true, true);     // Empieza en pausa para poder fijar el volumen
+        if (efectoPuerta) { efectoPuerta->setVolume(VOL_PUERTA); efectoPuerta->setIsPaused(false); }
     }
 
     // Que tan "dentro" de la casa esta el jugador: 0 = afuera, 1 = adentro. Cambia suave en la franja de las paredes.
@@ -100,6 +114,9 @@ private:
     irrklang::ISound* casa = nullptr;
     irrklang::ISound* bosque = nullptr;
     irrklang::ISound* pasos = nullptr;
+    irrklang::ISound* efectoPuerta = nullptr;
+    irrklang::ISoundSource* fuentePuerta = nullptr;
+    std::string rutaPuerta;
     float ultimaVolCasa = 0.0f, ultimaVolBosque = 0.0f;   // Para no mandar el mismo volumen a cada cuadro
     float pasosNivel = 0.0f;       // 0 a 1, para el fundido de los pasos
 };

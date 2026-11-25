@@ -285,9 +285,11 @@ void InteractWithHovered()
     }
     else if (currentHit.type == TYPE_DOOR) {
         if (casaModel) casaModel->ToggleDoor(currentHit.index);
+        sonido.Puerta();                                   // Rechinido de la puerta
     }
     else if (currentHit.type == TYPE_FURNITURE) {
         muebles.Toggle(currentHit.index);
+        sonido.Puerta();                                   // Cajones, puertas de closet y refri
     }
     else if (currentHit.type == TYPE_WINDOW) {
         if (casaModel) casaModel->ToggleWindow(currentHit.index);
