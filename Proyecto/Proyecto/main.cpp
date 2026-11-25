@@ -541,6 +541,7 @@ void DibujarMinijuegos()
     }
     trivia.Dibujar(ui);
     juegoPlantas.Dibujar(ui, camera.BasePosition, camera.Front);
+    sonido.Dibujar(ui);                // Indicador de volumen
     ui.End();
 }
 
@@ -693,6 +694,7 @@ bool Update()
 
 void processInput(GLFWwindow* window)
 {
+    sonido.Controles(window, deltaTime);   // Volumen: - y +, M = mudo (funciona siempre, incluso con popups)
     // ESC: si hay un popup de la trivia lo cierra; si no, cierra el programa (solo al presionarla, no al mantenerla)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         if (!keyEscPressed) {

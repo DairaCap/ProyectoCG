@@ -13,7 +13,10 @@
 #include <cmath>
 
 #include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
 #include <irrKlang.h>
+
+#include "UI.h"
 
 class Sonido {
 public:
@@ -28,6 +31,9 @@ public:
     static constexpr float VOL_BOSQUE = 0.70f;
     static constexpr float VOL_PASOS  = 0.60f;
     static constexpr float VOL_PUERTA = 0.80f;
+    // Silencio que traen al inicio los mp3 (medido en el archivo): se salta para que el sonido salga justo al accionar
+    static constexpr irrklang::ik_u32 SALTO_PUERTA_MS = 380;      // puerta_rechina.mp3 trae 0.38 s de silencio
+    static constexpr irrklang::ik_u32 SALTO_PASOS_MS  = 500;      // Footsteps.mp3: el primer paso suena a los 0.55 s
 
     // Rectangulo de la casa en el plano (x, z) del juego, medido del modelo. Se usa para saber que tan adentro esta el jugador.
     static constexpr float CASA_MIN_X = -9.25f, CASA_MAX_X = 7.29f;
@@ -78,7 +84,39 @@ public:
         if (!motor || !fuentePuerta) return;
         if (efectoPuerta) { efectoPuerta->stop(); efectoPuerta->drop(); efectoPuerta = nullptr; }
         efectoPuerta = motor->play2D(fuentePuerta, false, true, true);     // Empieza en pausa para poder fijar el volumen
-        if (efectoPuerta) { efectoPuerta->setVolume(VOL_PUERTA); efectoPuerta->setIsPaused(false); }
+        if (efectoPuerta) { efectoPuerta->setVolume(VOL_PUERTA); efectoPuerta->setPlayPosition(SALTO_PUERTA_MS); efectoPuerta->setIsPaused(false); }
+    }
+
+    // Control de volumen general: teclas - y + (o las del teclado numerico) suben y bajan, M silencia
+    void Controles(GLFWwindow* ventana, float dt) {
+        if (!motor) return;
+        float cambio = 0.0f;
+        if (glfwGetKey(ventana, GLFW_KEY_MINUS) == GLFW_PRESS || glfwGetKey(ventana, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) cambio -= 0.5f * dt;
+        if (glfwGetKey(ventana, GLFW_KEY_EQUAL) == GLFW_PRESS || glfwGetKey(ventana, GLFW_KEY_KP_ADD) == GLFW_PRESS) cambio += 0.5f * dt;   // + es Shift + =
+        if (cambio != 0.0f) {
+            maestro = std::min(std::max(maestro + cambio, 0.0f), 1.0f);
+            if (cambio > 0.0f) silenciado = false;                 // Subir el volumen quita el mudo
+            mostrarVolumen = 1.8f;
+        }
+        bool m = glfwGetKey(ventana, GLFW_KEY_M) == GLFW_PRESS;
+        if (m && !teclaM) { silenciado = !silenciado; mostrarVolumen = 1.8f; }
+        teclaM = m;
+        motor->setSoundVolume(silenciado ? 0.0f : maestro);
+        if (mostrarVolumen > 0.0f) mostrarVolumen -= dt;
+    }
+
+    // Indicador de volumen (arriba a la izquierda) que aparece unos segundos al cambiarlo
+    void Dibujar(UI& ui) {
+        if (mostrarVolumen <= 0.0f) return;
+        const float x = 24.0f, y = 24.0f, w = 300.0f, h = 70.0f;
+        ui.Panel(x, y, w, h);
+        if (silenciado) { ui.Texto("MUDO  (M PARA ACTIVAR)", x + 14.0f, y + 14.0f, 2.0f, UI::Rojo()); }
+        else {
+            char buf[32]; snprintf(buf, sizeof(buf), "VOLUMEN: %d", (int)std::round(maestro * 100.0f));
+            ui.Texto(buf, x + 14.0f, y + 14.0f, 2.0f, UI::Crema());
+        }
+        ui.Rect(x + 14.0f, y + 44.0f, w - 28.0f, 10.0f, glm::vec4(0.25f, 0.2f, 0.15f, 1.0f));                    // Fondo de la barra
+        ui.Rect(x + 14.0f, y + 44.0f, (w - 28.0f) * (silenciado ? 0.0f : maestro), 10.0f, UI::Verde());          // Nivel
     }
 
     // Que tan "dentro" de la casa esta el jugador: 0 = afuera, 1 = adentro. Cambia suave en la franja de las paredes.
@@ -103,7 +141,7 @@ public:
         float objetivo = caminando ? 1.0f : 0.0f;
         pasosNivel += (objetivo - pasosNivel) * std::min(dt * 10.0f, 1.0f);
         if (pasos) {
-            if (caminando && pasos->getIsPaused()) pasos->setIsPaused(false);
+            if (caminando && pasos->getIsPaused()) { pasos->setPlayPosition(SALTO_PASOS_MS); pasos->setIsPaused(false); }   // Arranca justo antes del primer paso
             if (!caminando && pasosNivel < 0.02f && !pasos->getIsPaused()) pasos->setIsPaused(true);
             pasos->setVolume(VOL_PASOS * pasosNivel);
         }
@@ -118,5 +156,8 @@ private:
     irrklang::ISoundSource* fuentePuerta = nullptr;
     std::string rutaPuerta;
     float ultimaVolCasa = 0.0f, ultimaVolBosque = 0.0f;   // Para no mandar el mismo volumen a cada cuadro
+    float maestro = 0.7f;           // Volumen general (0 a 1)
+    bool silenciado = false, teclaM = false;
+    float mostrarVolumen = 0.0f;    // Segundos que le quedan al indicador en pantalla
     float pasosNivel = 0.0f;       // 0 a 1, para el fundido de los pasos
 };
