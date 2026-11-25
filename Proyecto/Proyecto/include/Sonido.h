@@ -45,16 +45,26 @@ public:
         { std::ifstream probar(std::string("sonidos/") + ARCHIVO_BOSQUE, std::ios::binary); if (!probar) carpeta = "../sonidos"; }
         motor = irrklang::createIrrKlangDevice();
         if (!motor) { std::cout << "[Sonido] No se pudo iniciar irrKlang (sin dispositivo de audio)" << std::endl; return false; }
-        // play2D(archivo, bucle, empezarEnPausa, rastrear): rastrear = true para poder cambiar el volumen despues
-        casa   = motor->play2D((carpeta + "/" + ARCHIVO_CASA).c_str(), true, false, true);
-        bosque = motor->play2D((carpeta + "/" + ARCHIVO_BOSQUE).c_str(), true, false, true);
-        pasos  = motor->play2D((carpeta + "/" + ARCHIVO_PASOS).c_str(), true, true, true);     // Empieza en pausa
+        casa   = Reproducir(carpeta + "/" + ARCHIVO_CASA, false);
+        bosque = Reproducir(carpeta + "/" + ARCHIVO_BOSQUE, false);
+        pasos  = Reproducir(carpeta + "/" + ARCHIVO_PASOS, true);                              // Empieza en pausa
         if (casa) casa->setVolume(0.0f);
         if (bosque) bosque->setVolume(0.0f);
         if (pasos) pasos->setVolume(0.0f);
         std::cout << "[Sonido] Carpeta " << carpeta << " | casa:" << (casa != nullptr) << " bosque:" << (bosque != nullptr)
                   << " pasos:" << (pasos != nullptr) << std::endl;
         return true;
+    }
+
+    // Carga el audio completo en memoria (sin streaming) y lo reproduce en bucle. Con streaming, irrKlang decodifica el mp3
+    // mientras suena y, si el juego se atora un instante, se oyen cortes o ruido. Los archivos son cortos, caben en memoria.
+    irrklang::ISound* Reproducir(const std::string& ruta, bool empezarEnPausa) {
+        irrklang::ISoundSource* fuente = motor->getSoundSource(ruta.c_str());
+        if (!fuente) return nullptr;
+        fuente->setStreamMode(irrklang::ESM_NO_STREAMING);
+        fuente->setForcedStreamingThreshold(0);              // 0 = nunca forzar streaming por tamano
+        // play2D(fuente, bucle, empezarEnPausa, rastrear): rastrear = true para poder cambiar el volumen despues
+        return motor->play2D(fuente, true, empezarEnPausa, true);
     }
 
     // Que tan "dentro" de la casa esta el jugador: 0 = afuera, 1 = adentro. Cambia suave en la franja de las paredes.
@@ -72,8 +82,8 @@ public:
         // Aun dentro se oye un poco del bosque (por puertas y ventanas); afuera no se oye la casa
         float volCasa = VOL_CASA * dentro;
         float volBosque = VOL_BOSQUE * (0.15f + 0.85f * (1.0f - dentro));
-        if (casa) casa->setVolume(volCasa);
-        if (bosque) bosque->setVolume(volBosque);
+        if (casa && std::abs(volCasa - ultimaVolCasa) > 0.002f) { casa->setVolume(volCasa); ultimaVolCasa = volCasa; }
+        if (bosque && std::abs(volBosque - ultimaVolBosque) > 0.002f) { bosque->setVolume(volBosque); ultimaVolBosque = volBosque; }
 
         // Pasos: el volumen sube y baja rapido para que no corten de golpe
         float objetivo = caminando ? 1.0f : 0.0f;
@@ -90,5 +100,6 @@ private:
     irrklang::ISound* casa = nullptr;
     irrklang::ISound* bosque = nullptr;
     irrklang::ISound* pasos = nullptr;
+    float ultimaVolCasa = 0.0f, ultimaVolBosque = 0.0f;   // Para no mandar el mismo volumen a cada cuadro
     float pasosNivel = 0.0f;       // 0 a 1, para el fundido de los pasos
 };
