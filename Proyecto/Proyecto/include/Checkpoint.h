@@ -2,9 +2,9 @@
 // ============================================================================
 // Checkpoint.h - Pins visuales (como los de Google Maps) que marcan donde se puede
 // interactuar. Cada checkpoint es un pin que flota y siempre mira al jugador
-// (imagen minijuegos/pin.png) mas un aura circular en el piso que marca la zona.
+// (imagen minijuegos/pin.png) que flota y sube y baja suavemente.
 //
-// Cuando el jugador esta cerca pero todavia fuera del aura, se muestra el aviso
+// Cuando el jugador esta cerca pero todavia fuera de la zona de interaccion, se muestra el aviso
 // "Acercate al checkpoint para interactuar".
 // ============================================================================
 #include <string>
@@ -23,8 +23,8 @@
 
 struct Checkpoint {
     std::string id;                    // Nombre interno ("trivia", "plantas"...)
-    glm::vec3 pos;                     // Centro del aura en el piso (x, y del piso, z)
-    float radioInteraccion = 1.5f;     // Dentro de este radio (m) se puede interactuar
+    glm::vec3 pos;                     // Punto en el piso bajo el pin (x, y del piso, z)
+    float radioInteraccion = 1.5f;     // Dentro de este radio (m, invisible) se puede interactuar
     float radioAviso = 6.0f;           // Entre este radio y el anterior sale el aviso "Acercate"
 };
 
@@ -61,7 +61,7 @@ public:
         return glm::length(d);
     }
 
-    // Dibuja todos los pins y sus auras en el mundo 3D (llamar despues de dibujar la casa)
+    // Dibuja todos los pins en el mundo 3D (llamar despues de dibujar la casa)
     void Draw(const glm::mat4& projection, const glm::mat4& view, const glm::vec3& derechaCamara, float tiempo) {
         if (!shader || lista.empty()) return;
         GLboolean habiaCull = glIsEnabled(GL_CULL_FACE);
@@ -72,7 +72,6 @@ public:
         shader->use();
         shader->setMat4("projection", projection);
         shader->setMat4("view", view);
-        shader->setFloat("uTime", tiempo);
         shader->setInt("uTex", 0);
         glm::vec3 derecha(derechaCamara.x, 0.0f, derechaCamara.z);       // Solo giro horizontal: el pin no se acuesta
         derecha = (glm::length(derecha) > 1e-4f) ? glm::normalize(derecha) : glm::vec3(1, 0, 0);
@@ -80,21 +79,11 @@ public:
         glBindVertexArray(vao);
 
         for (const Checkpoint& c : lista) {
-            // Aura en el piso (no escribe profundidad para no tapar nada)
-            glDepthMask(GL_FALSE);
-            shader->setInt("uMode", 1);
-            shader->setVec3("uCenter", c.pos + glm::vec3(0.0f, 0.03f, 0.0f));
-            shader->setVec2("uSize", glm::vec2(c.radioInteraccion * 2.0f, 0.0f));
-            shader->setVec4("uColor", glm::vec4(0.85f, 0.25f, 0.22f, 1.0f));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-            glDepthMask(GL_TRUE);
-
-            // Pin: flota sobre el aura y sube y baja suavemente
+            // Pin: flota y sube y baja suavemente
             float flota = 0.95f + 0.07f * std::sin(tiempo * 2.2f);
             float alto = 0.60f, ancho = alto * aspectoPin;
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texPin);
-            shader->setInt("uMode", 0);
             shader->setVec3("uCenter", c.pos + glm::vec3(0.0f, flota, 0.0f));
             shader->setVec2("uSize", glm::vec2(ancho, alto));
             shader->setVec4("uColor", glm::vec4(1.0f));

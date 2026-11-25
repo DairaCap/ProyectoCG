@@ -3,7 +3,7 @@
 // Trivia.h - Minijuego de trivia botanica (popup a la derecha de la pantalla).
 //
 // Flujo:
-//   CERRADA  -> el jugador entra al aura del checkpoint -> INTRO (reglas)
+//   CERRADA  -> el jugador se acerca al checkpoint -> INTRO (reglas)
 //   INTRO    -> ENTER o E -> PREGUNTA
 //   PREGUNTA -> imagen de la pregunta; el jugador contesta con A, B o C -> RESPUESTA
 //   RESPUESTA-> "Correcto" / "Incorrecto" + imagen con la respuesta; ENTER -> siguiente pregunta
@@ -59,8 +59,8 @@ public:
         cerca = d <= radio;
         switch (estado) {
         case CERRADA:
-            if (cerca && armado) estado = INTRO;                            // Entra al aura: se abre la pantalla de inicio
-            if (d > radio * 1.3f) armado = true;                            // Ya salio del aura: puede volver a abrirse
+            if (cerca && armado) estado = INTRO;                            // Se acerca: se abre la pantalla de inicio
+            if (d > radio * 1.3f) armado = true;                            // Ya se alejo: puede volver a abrirse
             break;
         case INTRO:
             if (d > radio * 1.4f) { estado = CERRADA; armado = true; }      // Se alejo sin jugar
@@ -84,7 +84,7 @@ public:
         bool consumioE = false;
         switch (estado) {
         case CERRADA:
-            if (e && cerca) { estado = INTRO; consumioE = true; }           // Reabrir la trivia con E dentro del aura
+            if (e && cerca) { estado = INTRO; consumioE = true; }           // Reabrir la trivia con E cerca del pin
             break;
         case INTRO:
             if (confirmar) { Comenzar(); consumioE = e; }
@@ -103,7 +103,7 @@ public:
         return consumioE;
     }
 
-    // Cierra el popup (ESC) y no lo vuelve a abrir hasta que el jugador salga del aura y regrese
+    // Cierra el popup (ESC) y no lo vuelve a abrir hasta que el jugador se aleje y regrese
     void Cerrar() {
         LiberarImagenes();
         estado = CERRADA;
@@ -138,8 +138,8 @@ private:
     int aciertos = 0;
     float tiempo = 0.0f;                           // Segundos acumulados contestando
     GLuint texPregunta = 0, texRespuesta = 0;      // Imagenes de la pregunta en curso
-    bool cerca = false;                            // Jugador dentro del aura del checkpoint
-    bool armado = true;                            // Puede abrirse sola al entrar al aura
+    bool cerca = false;                            // Jugador a menos de radioInteraccion del pin
+    bool armado = true;                            // Puede abrirse sola al acercarse
     bool prevTecla[GLFW_KEY_LAST + 1] = {};
 
     // true solo en el cuadro en que la tecla pasa de suelta a presionada
@@ -307,7 +307,7 @@ private:
         ui.TextoCentrado("ENTER: CERRAR     R: JUGAR DE NUEVO", x, PW, cy, 2.0f, UI::Crema());
     }
 
-    // Aviso pequeño cuando el jugador sigue dentro del aura pero ya cerro la trivia
+    // Aviso pequeño cuando el jugador sigue cerca del pin pero ya cerro la trivia
     void DibujarAvisoReabrir(UI& ui) {
         float x = ui.W - PW - MARGEN, alto = 21.0f + 2 * PAD, y = 150.0f;
         ui.Panel(x, y, PW, alto);

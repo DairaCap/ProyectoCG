@@ -573,7 +573,7 @@ bool Update()
         avatarController.Update(deltaTime, personajeCaminando, characterModel);
     }
 
-    // Trivia: abre la pantalla de inicio al entrar al aura del checkpoint y corre el cronómetro mientras se juega
+    // Trivia: abre la pantalla de inicio al acercarse al checkpoint y corre el cronómetro mientras se juega
     if (!pantallaInicio && cpTrivia >= 0)
         trivia.Update(deltaTime, camera.BasePosition, checkpoints.lista[cpTrivia].pos, checkpoints.lista[cpTrivia].radioInteraccion);
 
@@ -657,7 +657,7 @@ bool Update()
         }
     }
 
-    checkpoints.Draw(projection, view, camera.Right, currentFrame);      // Pins y auras de los checkpoints
+    checkpoints.Draw(projection, view, camera.Right, currentFrame);      // Pins de los checkpoints
 
     if (crosshairShader && crosshairVAO != 0 && currentHit.type != NONE_TYPE)
     {
