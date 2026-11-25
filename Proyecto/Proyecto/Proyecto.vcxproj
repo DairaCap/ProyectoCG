@@ -113,6 +113,9 @@
     <ClInclude Include="include\UI.h" />
     <ClInclude Include="include\Checkpoint.h" />
     <ClInclude Include="include\Trivia.h" />
+    <ClInclude Include="include\JuegoPlantas.h" />
+    <ClInclude Include="include\Aura.h" />
+    <ClInclude Include="include\PuntoLibre.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

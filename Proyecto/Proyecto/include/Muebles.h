@@ -93,6 +93,11 @@ public:
     std::vector<AABB> colisiones;
     float tiempo = 0.0f;
 
+    // Movimiento de plantas (minijuego de acomodar plantas): si plantaMovida[i] = 1, todas las piezas de plantas[i]
+    // se dibujan con la matriz de mundo plantaMatriz[i] (se aplica despues de sus animaciones y del viento).
+    std::vector<glm::mat4> plantaMatriz;
+    std::vector<char> plantaMovida;
+
     // Carga todo desde una carpeta (por ejemplo "muebles"). Regresa false si no la encuentra.
     bool Cargar(const std::string& carpeta) {
         std::ifstream prueba(carpeta + "/Muebles.fbx", std::ios::binary);
@@ -167,10 +172,25 @@ public:
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
         glBindVertexArray(0);
 
+        plantaMatriz.assign(plantas.size(), glm::mat4(1.0f));
+        plantaMovida.assign(plantas.size(), 0);
         std::cout << "[Muebles] " << plantas.size() << " plantas con tarjeta | " << modelo->meshes.size() << " mallas | " << piezas.size()
                   << " piezas animadas | " << grupos.size() << " muebles interactivos | "
                   << colisiones.size() << " colisiones" << std::endl;
         return true;
+    }
+
+    // Centro de la base de la planta i en su lugar original (ahi se acomoda en el minijuego)
+    glm::vec3 BaseOriginal(size_t i) const {
+        const AABB& c = plantas[i].caja;
+        return glm::vec3((c.minPoint.x + c.maxPoint.x) * 0.5f, c.minPoint.y, (c.minPoint.z + c.maxPoint.z) * 0.5f);
+    }
+
+    // Caja de la planta i donde esta ahora (si el minijuego la movio, se desplaza con ella). Sirve para apuntarle.
+    AABB CajaActual(size_t i) const {
+        if (i >= plantaMovida.size() || !plantaMovida[i]) return plantas[i].caja;
+        glm::vec3 desplazamiento = glm::vec3(plantaMatriz[i] * glm::vec4(BaseOriginal(i), 1.0f)) - BaseOriginal(i);
+        return AABB(plantas[i].caja.minPoint + desplazamiento, plantas[i].caja.maxPoint + desplazamiento);
     }
 
     // Abre o cierra un mueble (todas sus piezas)
@@ -228,6 +248,8 @@ public:
             auto pr = procedurales.find(m.nodeName);          // Viento / balanceo (procedural)
             if (pr != procedurales.end())
                 transformacion = MatrizProcedural(pr->second) * transformacion;
+            int pi = PlantaDeNodo(m.nodeName);                // Planta movida por el minijuego: se mueve completa
+            if (pi >= 0 && plantaMovida[pi]) transformacion = plantaMatriz[pi] * transformacion;
             shader.setMat4("model", transformacion);
             m.Draw(shader);
         }
@@ -287,6 +309,21 @@ public:
     }
 
 private:
+    std::map<std::string, int> plantaPorNodo;           // Nombre de pieza -> indice en 'plantas' (-1 = no es planta con tarjeta)
+
+    // A que planta con tarjeta pertenece una pieza ("Planta_Aloe__aloeVera" -> Planta_Aloe). Se guarda para no repetir la busqueda.
+    int PlantaDeNodo(const std::string& nodo) {
+        auto it = plantaPorNodo.find(nodo);
+        if (it != plantaPorNodo.end()) return it->second;
+        int r = -1;
+        for (size_t i = 0; i < plantas.size(); ++i) {
+            const std::string& n = plantas[i].nombre;
+            if (nodo == n || nodo.compare(0, n.size() + 2, n + "__") == 0) { r = (int)i; break; }   // El "__" distingue Ficus de FicusPeq
+        }
+        plantaPorNodo[nodo] = r;
+        return r;
+    }
+
     // Interpola la pista en el segundo t y arma la matriz (rotación o escala en el pivote)
     static glm::mat4 MatrizKeyframes(const PistaKeyframes& pk, float t) {
         const auto& k = pk.claves;

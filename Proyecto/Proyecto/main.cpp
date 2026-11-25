@@ -32,6 +32,9 @@
 #include "UI.h"
 #include "Checkpoint.h"
 #include "Trivia.h"
+#include "JuegoPlantas.h"
+#include "Aura.h"
+#include "PuntoLibre.h"
 
 // Dimensiones de ventana
 const unsigned int SCR_WIDTH = 1280;
@@ -62,6 +65,12 @@ void MostrarPantallaInicio(bool mostrar) {
 UI ui;
 Checkpoints checkpoints;
 Trivia trivia;
+JuegoPlantas juegoPlantas;                                      // Minijuego: acomodar las plantas
+Auras auras;                                                    // Círculos verdes / rojos en el piso del minijuego
+std::vector<AuraInfo> listaAuras;
+int cpPlantas = -1;                                             // Índice del checkpoint del minijuego de plantas
+// Punto del patio (jardín norte, cerca de la mesa del jardín) donde está el checkpoint de las plantas; se corre al lugar libre más cercano.
+const glm::vec3 CHECKPOINT_PLANTAS_POS(-4.5f, 0.05f, -8.0f);
 int cpTrivia = -1;                                              // Índice del checkpoint de la trivia en checkpoints.lista
 // Punto donde se quiere el checkpoint de la trivia: centro de la casa (x, y del piso, z). Si ahí hay un mueble
 // o una pared, Start() lo recorre al lugar libre más cercano. Se puede mover cambiando estos números.
@@ -232,7 +241,7 @@ RayHit PerformRaycast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, float
         }
     }
     // Plantas con tarjeta informativa
-    for (size_t i = 0; i < muebles.plantas.size(); ++i) {
+    for (size_t i = 0; i < muebles.plantas.size() && !juegoPlantas.Jugando(); ++i) {   // En el minijuego las plantas se agarran, no muestran tarjeta
         float d = 0.0f;
         AABB caja(muebles.plantas[i].caja.minPoint - glm::vec3(0.10f), muebles.plantas[i].caja.maxPoint + glm::vec3(0.10f));
         if (RayIntersectsAABB(rayOrigin, rayDir, caja, closestHit.distance, d)) {
@@ -291,33 +300,6 @@ glm::vec3 GetWallNormalForPosition(glm::vec3 pos) {
     return glm::vec3(0, 0, 1);
 }
 
-// ¿El círculo de radio "radio" centrado en p (en el piso) está libre de muebles y paredes?
-// Se ignoran las cajas que son solo piso (muy bajas) o techo (muy altas).
-bool PuntoLibre(const glm::vec3& p, float radio, const std::vector<AABB>& cajas)
-{
-    for (const AABB& c : cajas) {
-        if (c.maxPoint.y < 0.3f || c.minPoint.y > 1.6f) continue;
-        float cx = std::min(std::max(p.x, c.minPoint.x), c.maxPoint.x);     // Punto de la caja más cercano a p
-        float cz = std::min(std::max(p.z, c.minPoint.z), c.maxPoint.z);
-        if (glm::length(glm::vec2(p.x - cx, p.z - cz)) < radio) return false;
-    }
-    return true;
-}
-
-// Busca desde "deseado" hacia afuera (en anillos de 0.25 m) el primer punto libre
-glm::vec3 BuscarPuntoLibre(const glm::vec3& deseado, const std::vector<AABB>& cajas)
-{
-    for (float r = 0.0f; r <= 4.0f; r += 0.25f) {
-        int pasos = (r == 0.0f) ? 1 : 16;
-        for (int k = 0; k < pasos; ++k) {
-            float ang = glm::radians(360.0f * k / pasos);
-            glm::vec3 cand = deseado + glm::vec3(std::cos(ang), 0.0f, std::sin(ang)) * r;
-            if (PuntoLibre(cand, 1.0f, cajas)) return cand;
-        }
-    }
-    return deseado;
-}
-
 bool Start()
 {
     glfwInit();
@@ -354,6 +336,8 @@ bool Start()
     { std::ifstream probar("minijuegos/pin.png", std::ios::binary); if (!probar) carpetaMinijuegos = "../minijuegos"; }
     ui.Init((float)SCR_WIDTH, (float)SCR_HEIGHT);
     checkpoints.Init(carpetaMinijuegos);
+    auras.Init();
+    juegoPlantas.Init(&muebles);
     trivia.Init(carpetaMinijuegos);
 
     float crosshairVertices[] = { -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f };
@@ -410,6 +394,9 @@ bool Start()
         glm::vec3 pos = BuscarPuntoLibre(CHECKPOINT_TRIVIA_POS, cajas);
         cpTrivia = checkpoints.Agregar("trivia", pos, 1.5f, 6.0f);
         std::cout << "[Checkpoint] Trivia en (" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
+        glm::vec3 posPlantas = BuscarPuntoLibre(CHECKPOINT_PLANTAS_POS, cajas);      // Checkpoint del minijuego de plantas (patio)
+        cpPlantas = checkpoints.Agregar("plantas", posPlantas, 1.8f, 6.0f);
+        std::cout << "[Checkpoint] Plantas en (" << posPlantas.x << ", " << posPlantas.y << ", " << posPlantas.z << ")" << std::endl;
     }
 
     std::string charPath = "personaje_estudiante2.fbx";      // Versión con la regadera colocada en la mano
@@ -542,12 +529,13 @@ bool Start()
 void DibujarMinijuegos()
 {
     ui.Begin();
-    if (!trivia.Visible()) {
+    if (!trivia.Visible() && !juegoPlantas.Visible()) {
         float distancia = 0.0f;
         int cp = checkpoints.CheckpointParaAvisar(camera.BasePosition, camera.Front, distancia);
         if (cp >= 0) checkpoints.DibujarAviso(ui, distancia);
     }
     trivia.Dibujar(ui);
+    juegoPlantas.Dibujar(ui, camera.BasePosition, camera.Front);
     ui.End();
 }
 
@@ -577,7 +565,17 @@ bool Update()
     if (!pantallaInicio && cpTrivia >= 0)
         trivia.Update(deltaTime, camera.BasePosition, checkpoints.lista[cpTrivia].pos, checkpoints.lista[cpTrivia].radioInteraccion);
 
-    if (pantallaInicio || trivia.Activa()) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla o se juega
+    // Minijuego de plantas: se mueve la planta que se carga y se calculan las auras del cuadro
+    if (!pantallaInicio && cpPlantas >= 0) {
+        std::vector<AABB> cajasMundo = casaModel->GetActiveColliders();
+        cajasMundo.insert(cajasMundo.end(), muebles.colisiones.begin(), muebles.colisiones.end());
+        juegoPlantas.bloqueado = trivia.Visible();
+        juegoPlantas.Update(deltaTime, camera.BasePosition, camera.Front, camera.BasePosition.y - camera.eyeHeight, cajasMundo,
+                            checkpoints.lista[cpPlantas].pos, checkpoints.lista[cpPlantas].radioInteraccion);
+        juegoPlantas.ObtenerAuras(listaAuras);
+    }
+
+    if (pantallaInicio || trivia.Activa() || juegoPlantas.Activa()) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla o se juega
     else currentHit = PerformRaycast(camera.GetEyePosition(), camera.Front, 3.8f);
 
     if (!dayNightCyclePaused) dayTimeProgression += deltaTime * 0.05f;
@@ -657,6 +655,7 @@ bool Update()
         }
     }
 
+    auras.Draw(projection, view, listaAuras, currentFrame);              // Auras del minijuego de plantas (piso)
     checkpoints.Draw(projection, view, camera.Right, currentFrame);      // Pins de los checkpoints
 
     if (crosshairShader && crosshairVAO != 0 && currentHit.type != NONE_TYPE)
@@ -691,6 +690,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         if (!keyEscPressed) {
             if (trivia.Visible()) trivia.Cerrar();
+            else if (juegoPlantas.Visible()) juegoPlantas.Cerrar();     // Sale del minijuego y las plantas regresan a su lugar
             else glfwSetWindowShouldClose(window, true);
         }
         keyEscPressed = true;
@@ -704,15 +704,17 @@ void processInput(GLFWwindow* window)
     }
     else keyEnterPressed = false;
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        if (!keyHPressed && !trivia.Activa()) MostrarPantallaInicio(!pantallaInicio);   // H no abre la pantalla de inicio en pleno juego
+        if (!keyHPressed && !trivia.Activa() && !juegoPlantas.Visible()) MostrarPantallaInicio(!pantallaInicio);   // H no abre la pantalla de inicio en pleno juego
         keyHPressed = true;
     }
     else keyHPressed = false;
 
     // Trivia: lee A, B, C, ENTER, E y R. Durante el juego estas teclas contestan en vez de mover al jugador.
     bool teclaEConsumida = trivia.ProcesarTeclas(window, !pantallaInicio);
+    if (!trivia.Visible()) teclaEConsumida |= juegoPlantas.ProcesarTeclas(window, !pantallaInicio);   // Plantas: 1, 2, 3, ENTER, E, R
+    else juegoPlantas.ProcesarTeclas(window, false);
     if (pantallaInicio) { camera.isMoving = false; return; }
-    if (trivia.Activa()) { camera.isMoving = false; return; }   // Jugando: sin movimiento ni otras teclas
+    if (trivia.Activa() || juegoPlantas.Activa()) { camera.isMoving = false; return; }   // Popup de minijuego: sin movimiento ni otras teclas
 
     camera.isMoving = false;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -755,8 +757,10 @@ void processInput(GLFWwindow* window)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         if (pantallaInicio) MostrarPantallaInicio(false);     // Clic para iniciar el recorrido
-        else if (!trivia.Activa()) InteractWithHovered();     // Mientras se juega la trivia el clic no hace nada
+        else if (!trivia.Activa() && !juegoPlantas.Visible()) InteractWithHovered();     // Mientras se juega el clic no hace nada
     }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && !pantallaInicio && (action == GLFW_PRESS || action == GLFW_RELEASE))
+        juegoPlantas.Clic(action == GLFW_PRESS, camera.GetEyePosition(), camera.Front);    // Mantener el clic agarra una planta; soltarlo la deja
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -765,14 +769,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     if (pantallaInicio) return;      // Con el mouse libre la cámara no gira
-    if (trivia.Activa()) { lastX = (float)xpos; lastY = (float)ypos; return; }   // Jugando la trivia la cámara se queda quieta (sin salto al terminar)
+    if (trivia.Activa() || juegoPlantas.Activa()) { lastX = (float)xpos; lastY = (float)ypos; return; }   // Jugando la trivia la cámara se queda quieta (sin salto al terminar)
     if (firstMouse) { lastX = (float)xpos; lastY = (float)ypos; firstMouse = false; }
     camera.ProcessMouseMovement((float)xpos - lastX, lastY - (float)ypos);
     lastX = (float)xpos; lastY = (float)ypos;
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    if (pantallaInicio || trivia.Activa()) return;
+    if (pantallaInicio || trivia.Activa() || juegoPlantas.Activa()) return;
     camera.ProcessMouseScroll((float)yoffset);
 }
 
