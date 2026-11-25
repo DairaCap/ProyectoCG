@@ -18,9 +18,9 @@
 class Sonido {
 public:
     // Archivos dentro de la carpeta sonidos/
-    static constexpr const char* ARCHIVO_CASA    = "Stillness.wav";             // Ambiente de adentro
-    static constexpr const char* ARCHIVO_BOSQUE  = "naturaleza-bosque.wav";     // Ambiente de afuera
-    static constexpr const char* ARCHIVO_PASOS   = "Footsteps.wav";
+    static constexpr const char* ARCHIVO_CASA    = "Stillness.mp3";             // Ambiente de adentro
+    static constexpr const char* ARCHIVO_BOSQUE  = "naturaleza_bosque.mp3";     // Ambiente de afuera
+    static constexpr const char* ARCHIVO_PASOS   = "Footsteps.mp3";
 
     // Volumenes (0 a 1)
     static constexpr float VOL_CASA   = 0.50f;
