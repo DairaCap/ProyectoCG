@@ -33,6 +33,7 @@
 #include "Checkpoint.h"
 #include "Trivia.h"
 #include "JuegoPlantas.h"
+#include "Sonido.h"
 #include "Aura.h"
 #include "PuntoLibre.h"
 
@@ -65,6 +66,7 @@ void MostrarPantallaInicio(bool mostrar) {
 UI ui;
 Checkpoints checkpoints;
 Trivia trivia;
+Sonido sonido;                                                  // Ambiente (casa / bosque) y pasos
 JuegoPlantas juegoPlantas;                                      // Minijuego: acomodar las plantas
 Auras auras;                                                    // Círculos verdes / rojos en el piso del minijuego
 std::vector<AuraInfo> listaAuras;
@@ -337,6 +339,7 @@ bool Start()
     ui.Init((float)SCR_WIDTH, (float)SCR_HEIGHT);
     checkpoints.Init(carpetaMinijuegos);
     auras.Init();
+    sonido.Init();
     juegoPlantas.Init(&muebles);
     trivia.Init(carpetaMinijuegos);
 
@@ -548,6 +551,7 @@ bool Update()
 
     processInput(window);
     bool personajeCaminando = camera.isMoving;   // UpdatePhysics() reinicia isMoving, así que se guarda antes para animar al personaje
+    sonido.Update(deltaTime, camera.BasePosition, personajeCaminando && camera.enSuelo && !pantallaInicio);   // Mezcla casa/bosque y pasos
 
     if (casaModel && !pantallaInicio) {
         casaModel->UpdateAnimations(deltaTime);

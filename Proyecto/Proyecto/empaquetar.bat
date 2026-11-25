@@ -54,6 +54,8 @@ robocopy "%ORIGEN%textures" "%DESTINO%\textures" /E /NFL /NDL /NJH /NJS /NP /XF 
 robocopy "%ORIGEN%muebles"  "%DESTINO%\muebles"  /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%ORIGEN%minijuegos" "%DESTINO%\minijuegos" /E /NFL /NDL /NJH /NJS /NP >nul
 rem     (minijuegos = pin.png de los checkpoints y las imagenes de la trivia)
+robocopy "%ORIGEN%sonidos" "%DESTINO%\sonidos" /E /NFL /NDL /NJH /NJS /NP >nul
+rem     (sonidos = ambiente de la casa, ambiente del bosque y pasos)
 
 rem --- 6. Manual (si ya existe)
 if exist "%ORIGEN%manual.pdf" copy /y "%ORIGEN%manual.pdf" "%DESTINO%\" >nul
