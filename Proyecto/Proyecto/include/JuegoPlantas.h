@@ -168,11 +168,13 @@ public:
         if (!presionado && sostenida >= 0) {
             PlantaJ& p = set[sostenida];
             glm::vec3 meta = muebles->BaseOriginal(p.idx);
-            if (glm::length(glm::vec2(p.base.x - meta.x, p.base.z - meta.z)) <= TOLERANCIA) p.base = meta;   // Encaja en su aura (a su altura original)
+            bool encaja = glm::length(glm::vec2(p.base.x - meta.x, p.base.z - meta.z)) <= TOLERANCIA;
+            if (encaja) { p.base = meta; p.calif = 1; }                           // Encaja en su aura (a su altura original) y se palomea al instante
             else p.base.y = ultimoPies;                                           // Si no, cae al piso
             std::cout << "[Plantas] Suelta: " << NombreDe(p.idx) << " en (" << p.base.x << ", " << p.base.z << ")" << std::endl;
             sostenida = -1;
             AplicarMatrices();
+            ComprobarFin();
             return true;
         }
         return false;
@@ -373,12 +375,16 @@ private:
         ++calificaciones;
         ultimasBien = bien;
         std::cout << "[Plantas] Calificacion " << calificaciones << ": " << bien << "/" << set.size() << " bien" << std::endl;
-        if (bien == (int)set.size()) {
-            tiempoFinal = tiempo;
-            Restaurar();                                                      // Quedan exactamente en su lugar original
-            estado = FINAL;
-            std::cout << "[Plantas] Fin en " << Formato(tiempoFinal) << std::endl;
-        }
+        ComprobarFin();
+    }
+
+    // Si todas las plantas estan en verde, termina el juego
+    void ComprobarFin() {
+        for (const PlantaJ& p : set) if (p.calif != 1) return;
+        tiempoFinal = tiempo;
+        Restaurar();                                                          // Quedan exactamente en su lugar original
+        estado = FINAL;
+        std::cout << "[Plantas] Fin en " << Formato(tiempoFinal) << std::endl;
     }
 
     // ------------------------------------------------------------------ dibujo
@@ -438,9 +444,10 @@ private:
             cy += 14.0f + 8.0f;
             if (dibujar) {
                 char buf[64];
-                if (calificaciones == 0) snprintf(buf, sizeof(buf), "AÚN SIN CALIFICAR");
-                else snprintf(buf, sizeof(buf), "BIEN COLOCADAS: %d DE %d", ultimasBien, (int)set.size());
-                ui.Texto(buf, x + PAD, cy, 2.0f, calificaciones == 0 ? UI::Crema() : UI::Verde());
+                int bien = 0;
+                for (const PlantaJ& p : set) bien += (p.calif == 1);               // Cuenta en vivo las que ya estan en su lugar
+                snprintf(buf, sizeof(buf), "BIEN COLOCADAS: %d DE %d", bien, (int)set.size());
+                ui.Texto(buf, x + PAD, cy, 2.0f, bien == 0 ? UI::Crema() : UI::Verde());
             }
             cy += 14.0f + 10.0f;
             for (int i = 0; i < (int)set.size(); ++i) {                       // Una linea por planta con su estado
@@ -448,7 +455,7 @@ private:
                     const PlantaJ& p = set[i];
                     glm::vec4 col = (p.calif == 1) ? UI::Verde() : (p.calif == 2) ? UI::Rojo() : glm::vec4(0.60f, 0.58f, 0.55f, 1.0f);
                     ui.Rect(x + PAD + 2, cy + 1.0f, 12.0f, 12.0f, col);
-                    std::string nombre = NombreDe(p.idx) + (i == sostenida ? "  <" : "");
+                    std::string nombre = NombreDe(p.idx) + (i == sostenida ? "  <" : p.calif == 1 ? "  OK" : "");
                     ui.Texto(nombre, x + PAD + 24, cy, 2.0f, i == sostenida ? UI::Verde() : UI::Crema());
                 }
                 cy += 18.0f;
@@ -530,7 +537,7 @@ private:
         snprintf(buf, sizeof(buf), "CALIFICACIONES: %d", calificaciones);
         ui.TextoCentrado(buf, x, PW, cy, 4.0f, UI::Crema());
         cy += 28.0f + 18.0f;
-        ui.TextoCentrado(calificaciones == 1 ? "¡A LA PRIMERA! ERES EXPERTO" : "¡BIEN HECHO! SIGUE PRACTICANDO", x, PW, cy, 3.0f, UI::Verde());
+        ui.TextoCentrado(calificaciones <= 1 ? "¡A LA PRIMERA! ERES EXPERTO" : "¡BIEN HECHO! SIGUE PRACTICANDO", x, PW, cy, 3.0f, UI::Verde());
         cy += 21.0f + 14.0f;
         ui.TextoCentrado("ENTER: CERRAR     R: JUGAR DE NUEVO", x, PW, cy, 2.0f, UI::Crema());
     }
