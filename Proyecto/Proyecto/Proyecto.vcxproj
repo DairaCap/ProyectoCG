@@ -110,6 +110,9 @@
     <ClInclude Include="include\material.h" />
     <ClInclude Include="include\modelstructs.h" />
     <ClInclude Include="include\animatedmodel.h" />
+    <ClInclude Include="include\UI.h" />
+    <ClInclude Include="include\Checkpoint.h" />
+    <ClInclude Include="include\Trivia.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -48,10 +48,12 @@ robocopy "%ORIGEN%Casa_coliciones3.fbm"          "%DESTINO%\Casa_coliciones3.fbm
 robocopy "%ORIGEN%Casa_coliciones2.fbm"          "%DESTINO%\Casa_coliciones2.fbm"          /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%ORIGEN%personaje_estudiante_fix.fbm"  "%DESTINO%\personaje_estudiante_fix.fbm"  /E /NFL /NDL /NJH /NJS /NP >nul
 
-rem --- 5. Carpetas de recursos: shaders, texturas y muebles (con tarjetas y pantalla de inicio)
+rem --- 5. Carpetas de recursos: shaders, texturas, muebles (con tarjetas y pantalla de inicio) y minijuegos
 robocopy "%ORIGEN%shaders"  "%DESTINO%\shaders"  /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%ORIGEN%textures" "%DESTINO%\textures" /E /NFL /NDL /NJH /NJS /NP /XF *.zip >nul
 robocopy "%ORIGEN%muebles"  "%DESTINO%\muebles"  /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%ORIGEN%minijuegos" "%DESTINO%\minijuegos" /E /NFL /NDL /NJH /NJS /NP >nul
+rem     (minijuegos = pin.png de los checkpoints y las imagenes de la trivia)
 
 rem --- 6. Manual (si ya existe)
 if exist "%ORIGEN%manual.pdf" copy /y "%ORIGEN%manual.pdf" "%DESTINO%\" >nul

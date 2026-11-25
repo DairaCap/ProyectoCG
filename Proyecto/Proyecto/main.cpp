@@ -29,6 +29,9 @@
 #include "material.h"
 #include "AvatarController.h"
 #include "Muebles.h"
+#include "UI.h"
+#include "Checkpoint.h"
+#include "Trivia.h"
 
 // Dimensiones de ventana
 const unsigned int SCR_WIDTH = 1280;
@@ -54,6 +57,16 @@ void MostrarPantallaInicio(bool mostrar) {
     glfwSetInputMode(window, GLFW_CURSOR, mostrar ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
     firstMouse = true;           // Evita un salto de cámara al volver
 }
+
+// Minijuegos: interfaz 2D, checkpoints (pins) y trivia. Las imágenes están en la carpeta minijuegos/
+UI ui;
+Checkpoints checkpoints;
+Trivia trivia;
+int cpTrivia = -1;                                              // Índice del checkpoint de la trivia en checkpoints.lista
+// Punto donde se quiere el checkpoint de la trivia: centro de la casa (x, y del piso, z). Si ahí hay un mueble
+// o una pared, Start() lo recorre al lugar libre más cercano. Se puede mover cambiando estos números.
+const glm::vec3 CHECKPOINT_TRIVIA_POS(-1.0f, 0.05f, 0.5f);
+bool keyEscPressed = false;
 
 // Recursos gráficos
 Shader* mainShader = nullptr;
@@ -278,6 +291,33 @@ glm::vec3 GetWallNormalForPosition(glm::vec3 pos) {
     return glm::vec3(0, 0, 1);
 }
 
+// ¿El círculo de radio "radio" centrado en p (en el piso) está libre de muebles y paredes?
+// Se ignoran las cajas que son solo piso (muy bajas) o techo (muy altas).
+bool PuntoLibre(const glm::vec3& p, float radio, const std::vector<AABB>& cajas)
+{
+    for (const AABB& c : cajas) {
+        if (c.maxPoint.y < 0.3f || c.minPoint.y > 1.6f) continue;
+        float cx = std::min(std::max(p.x, c.minPoint.x), c.maxPoint.x);     // Punto de la caja más cercano a p
+        float cz = std::min(std::max(p.z, c.minPoint.z), c.maxPoint.z);
+        if (glm::length(glm::vec2(p.x - cx, p.z - cz)) < radio) return false;
+    }
+    return true;
+}
+
+// Busca desde "deseado" hacia afuera (en anillos de 0.25 m) el primer punto libre
+glm::vec3 BuscarPuntoLibre(const glm::vec3& deseado, const std::vector<AABB>& cajas)
+{
+    for (float r = 0.0f; r <= 4.0f; r += 0.25f) {
+        int pasos = (r == 0.0f) ? 1 : 16;
+        for (int k = 0; k < pasos; ++k) {
+            float ang = glm::radians(360.0f * k / pasos);
+            glm::vec3 cand = deseado + glm::vec3(std::cos(ang), 0.0f, std::sin(ang)) * r;
+            if (PuntoLibre(cand, 1.0f, cajas)) return cand;
+        }
+    }
+    return deseado;
+}
+
 bool Start()
 {
     glfwInit();
@@ -308,6 +348,13 @@ bool Start()
     cubemapShader = new Shader("shaders/10_vertex_cubemap.vs", "shaders/10_fragment_cubemap.fs");
     crosshairShader = new Shader("shaders/crosshair.vs", "shaders/crosshair.fs");
     tarjetaShader = new Shader("shaders/tarjeta.vs", "shaders/tarjeta.fs");
+
+    // Minijuegos: la carpeta minijuegos/ puede estar junto al ejecutable o un nivel arriba
+    std::string carpetaMinijuegos = "minijuegos";
+    { std::ifstream probar("minijuegos/pin.png", std::ios::binary); if (!probar) carpetaMinijuegos = "../minijuegos"; }
+    ui.Init((float)SCR_WIDTH, (float)SCR_HEIGHT);
+    checkpoints.Init(carpetaMinijuegos);
+    trivia.Init(carpetaMinijuegos);
 
     float crosshairVertices[] = { -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f };
     glGenVertexArrays(1, &crosshairVAO);
@@ -355,6 +402,15 @@ bool Start()
     texInicio = muebles.CargarTextura("muebles/pantalla_inicio.png");
     if (!texInicio) texInicio = muebles.CargarTextura("../muebles/pantalla_inicio.png");
     MostrarPantallaInicio(true);    // Arranca mostrando los controles con el mouse libre
+
+    // Checkpoint de la trivia en el centro de la casa, corrido a un lugar libre si ahí hay un mueble o pared
+    {
+        std::vector<AABB> cajas = casaModel->GetActiveColliders();
+        cajas.insert(cajas.end(), muebles.colisiones.begin(), muebles.colisiones.end());
+        glm::vec3 pos = BuscarPuntoLibre(CHECKPOINT_TRIVIA_POS, cajas);
+        cpTrivia = checkpoints.Agregar("trivia", pos, 1.5f, 6.0f);
+        std::cout << "[Checkpoint] Trivia en (" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
+    }
 
     std::string charPath = "personaje_estudiante2.fbx";      // Versión con la regadera colocada en la mano
     fCheck = fopen(charPath.c_str(), "rb");
@@ -482,6 +538,19 @@ bool Start()
     return true;
 }
 
+// Interfaz de los minijuegos (a la derecha de la pantalla): aviso "Acércate al checkpoint" y popup de la trivia
+void DibujarMinijuegos()
+{
+    ui.Begin();
+    if (!trivia.Visible()) {
+        float distancia = 0.0f;
+        int cp = checkpoints.CheckpointParaAvisar(camera.BasePosition, camera.Front, distancia);
+        if (cp >= 0) checkpoints.DibujarAviso(ui, distancia);
+    }
+    trivia.Dibujar(ui);
+    ui.End();
+}
+
 bool Update()
 {
     float currentFrame = (float)glfwGetTime();
@@ -504,7 +573,11 @@ bool Update()
         avatarController.Update(deltaTime, personajeCaminando, characterModel);
     }
 
-    if (pantallaInicio) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla
+    // Trivia: abre la pantalla de inicio al entrar al aura del checkpoint y corre el cronómetro mientras se juega
+    if (!pantallaInicio && cpTrivia >= 0)
+        trivia.Update(deltaTime, camera.BasePosition, checkpoints.lista[cpTrivia].pos, checkpoints.lista[cpTrivia].radioInteraccion);
+
+    if (pantallaInicio || trivia.Activa()) currentHit = RayHit();   // Sin objeto apuntado mientras se ve la pantalla o se juega
     else currentHit = PerformRaycast(camera.GetEyePosition(), camera.Front, 3.8f);
 
     if (!dayNightCyclePaused) dayTimeProgression += deltaTime * 0.05f;
@@ -584,6 +657,8 @@ bool Update()
         }
     }
 
+    checkpoints.Draw(projection, view, camera.Right, currentFrame);      // Pins y auras de los checkpoints
+
     if (crosshairShader && crosshairVAO != 0 && currentHit.type != NONE_TYPE)
     {
         glDisable(GL_DEPTH_TEST);
@@ -600,7 +675,10 @@ bool Update()
     }
 
     if (tarjetaShader && pantallaInicio) muebles.DibujarRect(*tarjetaShader, texInicio, -1.0f, -1.0f, 1.0f, 1.0f);   // Pantalla de inicio a todo lo ancho
-    else if (tarjetaShader) muebles.DibujarTarjeta(*tarjetaShader, (float)SCR_WIDTH, (float)SCR_HEIGHT);   // Tarjeta de la planta (a la derecha)
+    else {
+        if (tarjetaShader && !trivia.Visible()) muebles.DibujarTarjeta(*tarjetaShader, (float)SCR_WIDTH, (float)SCR_HEIGHT);   // Tarjeta de la planta (a la derecha)
+        DibujarMinijuegos();
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -609,7 +687,15 @@ bool Update()
 
 void processInput(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+    // ESC: si hay un popup de la trivia lo cierra; si no, cierra el programa (solo al presionarla, no al mantenerla)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (!keyEscPressed) {
+            if (trivia.Visible()) trivia.Cerrar();
+            else glfwSetWindowShouldClose(window, true);
+        }
+        keyEscPressed = true;
+    }
+    else keyEscPressed = false;
 
     // Pantalla de inicio: ENTER la cierra; H la vuelve a mostrar (libera el mouse). Mientras se ve, nada más responde.
     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS) {
@@ -618,11 +704,15 @@ void processInput(GLFWwindow* window)
     }
     else keyEnterPressed = false;
     if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        if (!keyHPressed) MostrarPantallaInicio(!pantallaInicio);
+        if (!keyHPressed && !trivia.Activa()) MostrarPantallaInicio(!pantallaInicio);   // H no abre la pantalla de inicio en pleno juego
         keyHPressed = true;
     }
     else keyHPressed = false;
+
+    // Trivia: lee A, B, C, ENTER, E y R. Durante el juego estas teclas contestan en vez de mover al jugador.
+    bool teclaEConsumida = trivia.ProcesarTeclas(window, !pantallaInicio);
     if (pantallaInicio) { camera.isMoving = false; return; }
+    if (trivia.Activa()) { camera.isMoving = false; return; }   // Jugando: sin movimiento ni otras teclas
 
     camera.isMoving = false;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -652,7 +742,7 @@ void processInput(GLFWwindow* window)
     else keyGPressed = false;
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-        if (!keyEPressed) { InteractWithHovered(); keyEPressed = true; }
+        if (!keyEPressed) { if (!teclaEConsumida) InteractWithHovered(); keyEPressed = true; }   // Si la trivia usó la E, no se interactúa además con lo que apunta la mira
     }
     else keyEPressed = false;
 
@@ -665,7 +755,7 @@ void processInput(GLFWwindow* window)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         if (pantallaInicio) MostrarPantallaInicio(false);     // Clic para iniciar el recorrido
-        else InteractWithHovered();
+        else if (!trivia.Activa()) InteractWithHovered();     // Mientras se juega la trivia el clic no hace nada
     }
 }
 
@@ -675,13 +765,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     if (pantallaInicio) return;      // Con el mouse libre la cámara no gira
+    if (trivia.Activa()) { lastX = (float)xpos; lastY = (float)ypos; return; }   // Jugando la trivia la cámara se queda quieta (sin salto al terminar)
     if (firstMouse) { lastX = (float)xpos; lastY = (float)ypos; firstMouse = false; }
     camera.ProcessMouseMovement((float)xpos - lastX, lastY - (float)ypos);
     lastX = (float)xpos; lastY = (float)ypos;
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    if (pantallaInicio) return;
+    if (pantallaInicio || trivia.Activa()) return;
     camera.ProcessMouseScroll((float)yoffset);
 }
 
