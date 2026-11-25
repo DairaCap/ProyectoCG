@@ -67,6 +67,9 @@ public:
         { "Planta_Palmera",      "Palmera",            "Jardín, junto a la sala" },
     };
 
+    // Plantas que NO participan en el minijuego (se quedan en su lugar). Para quitar otra, agregar su clave de la tabla INFO.
+    static inline const char* const EXCLUIDAS[] = { "Planta_Peperomia", "Planta_Aloe" };
+
     Estado estado = CERRADA;
     bool bloqueado = false;        // main.cpp lo pone en true mientras la trivia esta en pantalla
 
@@ -324,8 +327,12 @@ private:
         nivel = nivelElegido;
         tiempo = 0.0f; calificaciones = 0; ultimasBien = 0; sostenida = -1;
         set.clear();
-        std::vector<int> todas(muebles->plantas.size());
-        std::iota(todas.begin(), todas.end(), 0);
+        std::vector<int> todas;                                               // Plantas que pueden salir sorteadas (sin las excluidas)
+        for (size_t i = 0; i < muebles->plantas.size(); ++i) {
+            bool excluida = false;
+            for (const char* ex : EXCLUIDAS) if (muebles->plantas[i].nombre == ex) excluida = true;
+            if (!excluida) todas.push_back((int)i);
+        }
         std::shuffle(todas.begin(), todas.end(), rng);
         int n = std::min<int>(POR_JUEGO, (int)todas.size());
         std::uniform_real_distribution<float> azar(0.0f, 6.28318f);
