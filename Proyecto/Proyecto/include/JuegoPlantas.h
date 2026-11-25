@@ -3,17 +3,19 @@
 // JuegoPlantas.h - Minijuego "Acomoda las plantas".
 //
 // Flujo:
-//   CERRADA  -> el jugador se acerca al checkpoint del patio -> INTRO (reglas y eleccion de nivel)
-//   INTRO    -> tecla 1, 2 o 3 (Basico, Intermedio, Experto) -> JUGANDO
+//   CERRADA  -> cerca del checkpoint del patio sale el aviso "PRESIONA E"; al presionar E -> REGLAS
+//   REGLAS   -> ENTER o E -> NIVEL
+//   NIVEL    -> tecla 1, 2 o 3 (Basico, Intermedio, Experto) -> JUGANDO
 //   JUGANDO  -> 8 plantas al azar se teletransportan al patio. Se agarran MANTENIENDO el clic izquierdo
 //               (la planta flota frente a la mira) y se sueltan al dejar el clic. ENTER califica:
 //               aura verde = bien colocada, roja = mal. Las rojas se pueden volver a agarrar.
 //   FINAL    -> cuando TODAS estan en verde: tiempo y numero de calificaciones.
 //
 // Niveles (pistas al agarrar una planta):
-//   1 Basico:      aura en su lugar + zona + distancia y direccion
-//   2 Intermedio:  solo el nombre de la zona
-//   3 Experto:     sin pistas, hay que recordar donde estaba
+//   En todos los niveles se ven los circulos (auras) de los 8 lugares correctos.
+//   1 Basico:      el aura de la planta que cargas se resalta + zona + distancia y direccion
+//   2 Intermedio:  auras iguales + nombre de la zona
+//   3 Experto:     auras iguales, sin nombre ni pistas (hay que recordar a quien le toca cada una)
 //
 // Las plantas se mueven con Muebles::plantaMatriz / plantaMovida (ver Muebles.h). El lugar correcto de cada
 // planta es su lugar original (el centro de su caja en plantas.csv); cuenta como bien si queda a menos de
@@ -40,7 +42,7 @@
 
 class JuegoPlantas {
 public:
-    enum Estado { CERRADA, INTRO, JUGANDO, FINAL };
+    enum Estado { CERRADA, REGLAS, NIVEL, JUGANDO, FINAL };
 
     static constexpr int POR_JUEGO = 8;            // Plantas que se usan en cada partida (al azar de las 15 con tarjeta)
     static constexpr float TOLERANCIA = 0.5f;      // m: a esta distancia del lugar original cuenta como bien colocada
@@ -72,7 +74,7 @@ public:
 
     bool Visible() const { return estado != CERRADA; }              // Hay popup o juego en pantalla
     bool Jugando() const { return estado == JUGANDO; }
-    bool Activa() const { return estado == INTRO || estado == FINAL; }   // Popup que bloquea movimiento y camara (jugando se camina libre)
+    bool Activa() const { return estado == REGLAS || estado == NIVEL || estado == FINAL; }   // Popup que bloquea movimiento y camara (jugando se camina libre)
     bool Sosteniendo() const { return sostenida >= 0; }
 
     // Se llama cada cuadro. jugador = BasePosition de la camara, frente = hacia donde mira, pies = altura del piso
@@ -85,11 +87,10 @@ public:
         cerca = d <= radio;
         switch (estado) {
         case CERRADA:
-            if (cerca && armado && !bloqueado) estado = INTRO;      // Se acerca: se abre la pantalla de inicio
-            if (d > radio * 1.3f) armado = true;                    // Ya se alejo: puede volver a abrirse sola
-            break;
-        case INTRO:
-            if (d > radio * 1.4f || bloqueado) { estado = CERRADA; armado = true; }
+            break;                                                  // No se abre sola: el jugador presiona E
+        case REGLAS:
+        case NIVEL:
+            if (d > radio * 1.4f || bloqueado) estado = CERRADA;
             break;
         case JUGANDO:
             tiempo += dt;
@@ -117,9 +118,12 @@ public:
         bool consumioE = false;
         switch (estado) {
         case CERRADA:
-            if (e && cerca && !bloqueado) { estado = INTRO; consumioE = true; }   // Reabrir con E cerca del pin
+            if (e && cerca && !bloqueado) { estado = REGLAS; consumioE = true; }   // E cerca del pin abre las reglas
             break;
-        case INTRO:
+        case REGLAS:
+            if (confirmar || e) { estado = NIVEL; consumioE = e; }
+            break;
+        case NIVEL:
             if (k1 || k1n) Comenzar(1);
             else if (k2 || k2n) Comenzar(2);
             else if (k3 || k3n) Comenzar(3);
@@ -129,36 +133,49 @@ public:
             break;
         case FINAL:
             if (confirmar || e) { Cerrar(); consumioE = e; }
-            else if (r) { set.clear(); estado = INTRO; }                           // Jugar de nuevo: otra vez a elegir nivel
+            else if (r) { set.clear(); estado = NIVEL; }                           // Jugar de nuevo: otra vez a elegir nivel
             break;
         }
         return consumioE;
     }
 
-    // Clic izquierdo: al presionarlo se agarra la planta a la que apunta la mira; al soltarlo se deja en el piso
-    void Clic(bool presionado, const glm::vec3& ojo, const glm::vec3& frente) {
-        if (estado != JUGANDO) return;
-        if (presionado && sostenida < 0) {
-            float mejor = 4.5f; int k = -1;                                       // Alcance maximo para agarrar (m)
-            for (size_t i = 0; i < set.size(); ++i) {
-                AABB c = muebles->CajaActual(set[i].idx);
-                c.minPoint -= glm::vec3(0.12f); c.maxPoint += glm::vec3(0.12f);   // Un poco de margen para apuntar mejor
-                float t;
-                if (RayAABB(ojo, glm::normalize(frente), c, mejor, t)) { mejor = t; k = (int)i; }
-            }
-            if (k >= 0) {
-                sostenida = k;
-                set[k].calif = 0;                                                 // Al moverla se borra su calificacion
-                std::cout << "[Plantas] Agarra: " << NombreDe(set[k].idx) << std::endl;
-            }
+    // Planta del juego a la que apunta la mira (-1 = ninguna). Se llama cada cuadro mientras se juega.
+    int Apuntar(const glm::vec3& ojo, const glm::vec3& frente) {
+        apuntada = -1;
+        if (estado != JUGANDO || sostenida >= 0) return apuntada;
+        float mejor = 4.5f;                                                       // Alcance maximo para agarrar (m)
+        for (size_t i = 0; i < set.size(); ++i) {
+            AABB c = muebles->CajaActual(set[i].idx);
+            c.minPoint -= glm::vec3(0.20f); c.maxPoint += glm::vec3(0.20f);       // Margen para apuntar mejor
+            float t;
+            if (RayAABB(ojo, glm::normalize(frente), c, mejor, t)) { mejor = t; apuntada = (int)i; }
         }
-        else if (!presionado && sostenida >= 0) {
+        return apuntada;
+    }
+
+    // Clic izquierdo: al presionarlo agarra la planta a la que apunta la mira; al soltarlo la deja.
+    // Regresa true si el clic fue del juego (para que main.cpp no lo use ademas para abrir puertas).
+    bool Clic(bool presionado, const glm::vec3& ojo, const glm::vec3& frente) {
+        if (estado != JUGANDO) return false;
+        if (presionado && sostenida < 0) {
+            int k = Apuntar(ojo, frente);
+            if (k < 0) return false;
+            sostenida = k;
+            set[k].calif = 0;                                                     // Al moverla se borra su calificacion
+            std::cout << "[Plantas] Agarra: " << NombreDe(set[k].idx) << std::endl;
+            return true;
+        }
+        if (!presionado && sostenida >= 0) {
             PlantaJ& p = set[sostenida];
-            p.base.y = ultimoPies;                                                // Cae al piso donde esta el jugador
+            glm::vec3 meta = muebles->BaseOriginal(p.idx);
+            if (glm::length(glm::vec2(p.base.x - meta.x, p.base.z - meta.z)) <= TOLERANCIA) p.base = meta;   // Encaja en su aura (a su altura original)
+            else p.base.y = ultimoPies;                                           // Si no, cae al piso
             std::cout << "[Plantas] Suelta: " << NombreDe(p.idx) << " en (" << p.base.x << ", " << p.base.z << ")" << std::endl;
             sostenida = -1;
             AplicarMatrices();
+            return true;
         }
+        return false;
     }
 
     // ESC: sale del juego y todas las plantas regresan a su lugar. No se vuelve a abrir hasta alejarse y regresar.
@@ -170,27 +187,34 @@ public:
         armado = false;
     }
 
-    // Auras en el piso para dibujar este cuadro: verde / roja segun la calificacion, y (nivel Basico) el lugar de la planta que se carga
+    // Auras a dibujar este cuadro: lugares correctos (todos los niveles), marcas de "agarrable" bajo cada planta y calificaciones
     void ObtenerAuras(std::vector<AuraInfo>& out) const {
         out.clear();
         if (estado != JUGANDO) return;
         for (int i = 0; i < (int)set.size(); ++i) {
             const PlantaJ& p = set[i];
-            if (i == sostenida || p.calif == 0) continue;
-            glm::vec4 color = (p.calif == 1) ? glm::vec4(0.35f, 0.85f, 0.30f, 1.0f) : glm::vec4(0.90f, 0.25f, 0.22f, 1.0f);
-            out.push_back({ p.base, 0.55f, color });
+            glm::vec3 meta = muebles->BaseOriginal(p.idx);
+            bool resaltada = (nivel == 1 && i == sostenida);                       // Basico: el destino de la planta que cargas
+            if (p.calif != 1) {                                                    // Si ya esta en verde, la planta tapa su aura
+                glm::vec4 col = resaltada ? glm::vec4(1.0f, 0.95f, 0.70f, 1.0f) : glm::vec4(0.65f, 0.80f, 1.0f, 0.75f);
+                out.push_back({ meta, resaltada ? TOLERANCIA + 0.1f : TOLERANCIA, col });
+            }
+            if (i == sostenida) continue;
+            if (p.calif == 1)      out.push_back({ p.base, 0.55f, glm::vec4(0.35f, 0.85f, 0.30f, 1.0f) });
+            else if (p.calif == 2) out.push_back({ p.base, 0.55f, glm::vec4(0.90f, 0.25f, 0.22f, 1.0f) });
+            else                   out.push_back({ p.base, i == apuntada ? 0.60f : 0.45f,      // Marca: esta planta se puede agarrar
+                                                   i == apuntada ? glm::vec4(1.0f, 1.0f, 0.85f, 1.0f) : glm::vec4(1.0f, 0.78f, 0.25f, 1.0f) });
         }
-        if (nivel == 1 && sostenida >= 0)
-            out.push_back({ muebles->BaseOriginal(set[sostenida].idx), TOLERANCIA, glm::vec4(1.0f, 0.95f, 0.70f, 1.0f) });
     }
 
     // Dibuja los popups segun el estado. frente = hacia donde mira el jugador (para la flecha del nivel Basico).
     void Dibujar(UI& ui, const glm::vec3& jugador, const glm::vec3& frente) {
         switch (estado) {
         case CERRADA:
-            if (cerca && !armado && !bloqueado) DibujarAvisoReabrir(ui);
+            if (cerca && !bloqueado) DibujarAvisoReabrir(ui);
             break;
-        case INTRO:   DibujarIntro(ui); break;
+        case REGLAS:  DibujarReglas(ui); break;
+        case NIVEL:   DibujarNivel(ui); break;
         case JUGANDO: DibujarJuego(ui, jugador, frente); break;
         case FINAL:   DibujarFinal(ui); break;
         }
@@ -215,6 +239,7 @@ private:
     Muebles* muebles = nullptr;
     const std::vector<AABB>* cajas = nullptr;
     std::vector<PlantaJ> set;                     // Las plantas de esta partida
+    int apuntada = -1;                            // Planta del juego a la que apunta la mira
     int sostenida = -1;                           // Posicion en 'set' de la planta que se carga (-1 = ninguna)
     int nivel = 1;                                // 1 Basico, 2 Intermedio, 3 Experto
     int calificaciones = 0;                       // Cuantas veces se califico
@@ -359,23 +384,37 @@ private:
     // ------------------------------------------------------------------ dibujo
 
     void DibujarAvisoReabrir(UI& ui) {
-        float x = ui.W - PW - MARGEN, alto = 21.0f + 2 * PAD, y = 150.0f;
+        float x = ui.W - PW - MARGEN, alto = 21.0f + 2 * PAD, y = 24.0f;
         ui.Panel(x, y, PW, alto);
-        ui.TextoCentrado("PRESIONA E: ACOMODAR PLANTAS", x, PW, y + PAD, 3.0f, UI::Verde());
+        ui.TextoCentrado("PRESIONA E PARA JUGAR: ACOMODA LAS PLANTAS", x, PW, y + PAD, 3.0f, UI::Verde());
     }
 
-    void DibujarIntro(UI& ui) {
+    void DibujarReglas(UI& ui) {
         float x = ui.W - PW - MARGEN, ancho = PW - 2 * PAD - 8.0f, xt = x + PAD + 4;
         auto contenido = [&](float y, bool dibujar) {
             if (dibujar) ui.TextoCentrado("ACOMODA LAS PLANTAS", x, PW, y, 4.0f, UI::Verde());
             y += 28.0f + 20.0f;
             y = ui.TextoEnvuelto("LAS PLANTAS SE FUERON AL PATIO. LLÉVALAS DE VUELTA A SU LUGAR EN LA CASA.", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 6.0f;
-            y = ui.TextoEnvuelto("MANTÉN EL CLIC IZQUIERDO PARA AGARRAR UNA PLANTA Y SUÉLTALA EN SU LUGAR.", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 6.0f;
+            y = ui.TextoEnvuelto("MANTÉN EL CLIC IZQUIERDO SOBRE UNA PLANTA CON CÍRCULO AMARILLO PARA AGARRARLA. SUÉLTALA EN SU CÍRCULO.", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 6.0f;
             y = ui.TextoEnvuelto("ENTER CALIFICA: VERDE ES BIEN Y ROJO ES MAL. TERMINAS CUANDO TODAS ESTÉN EN VERDE.", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 12.0f;
-            y = ui.TextoEnvuelto("1  BÁSICO: AURA, ZONA Y DISTANCIA", xt, y, ancho, 3.0f, UI::Verde(), dibujar);
-            y = ui.TextoEnvuelto("2  INTERMEDIO: SOLO LA ZONA", xt, y, ancho, 3.0f, UI::Verde(), dibujar);
-            y = ui.TextoEnvuelto("3  EXPERTO: SIN PISTAS", xt, y, ancho, 3.0f, UI::Verde(), dibujar) + 10.0f;
-            y = ui.TextoEnvuelto("PRESIONA 1, 2 O 3 PARA COMENZAR", xt, y, ancho, 3.0f, UI::Crema(), dibujar);
+            y = ui.TextoEnvuelto("PRESIONA ENTER O E PARA CONTINUAR", xt, y, ancho, 3.0f, UI::Verde(), dibujar);
+            return y;
+        };
+        float alto = contenido(0.0f, false) + 2 * PAD - 8.0f;
+        float y = (ui.H - alto) * 0.5f;
+        ui.Panel(x, y, PW, alto);
+        contenido(y + PAD, true);
+    }
+
+    void DibujarNivel(UI& ui) {
+        float x = ui.W - PW - MARGEN, ancho = PW - 2 * PAD - 8.0f, xt = x + PAD + 4;
+        auto contenido = [&](float y, bool dibujar) {
+            if (dibujar) ui.TextoCentrado("ELIGE EL NIVEL", x, PW, y, 4.0f, UI::Verde());
+            y += 28.0f + 20.0f;
+            y = ui.TextoEnvuelto("1  BÁSICO: SE RESALTA EL CÍRCULO DE LA PLANTA, MÁS ZONA Y DISTANCIA", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 8.0f;
+            y = ui.TextoEnvuelto("2  INTERMEDIO: SOLO EL NOMBRE DE LA ZONA", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 8.0f;
+            y = ui.TextoEnvuelto("3  EXPERTO: SIN PISTAS", xt, y, ancho, 3.0f, UI::Crema(), dibujar) + 12.0f;
+            y = ui.TextoEnvuelto("PRESIONA 1, 2 O 3 PARA COMENZAR. ESC PARA SALIR", xt, y, ancho, 3.0f, UI::Verde(), dibujar);
             return y;
         };
         float alto = contenido(0.0f, false) + 2 * PAD - 8.0f;
@@ -424,6 +463,13 @@ private:
         hud(y + PAD, true);
 
         if (sostenida >= 0) DibujarPistas(ui, jugador, frente, x, y + alto + 14.0f, pw);
+        else if (apuntada >= 0) {                                                // Aviso abajo al centro: esta planta se puede agarrar
+            std::string t = "MANTÉN EL CLIC PARA AGARRAR: " + NombreDe(set[apuntada].idx);
+            float w = ui.AnchoTexto(t, 3.0f) + 2 * PAD;
+            float bx = (ui.W - w) * 0.5f, by = ui.H - 90.0f;
+            ui.Panel(bx, by, w, 21.0f + 2 * PAD);
+            ui.Texto(t, bx + PAD, by + PAD, 3.0f, UI::Verde());
+        }
     }
 
     // Cuadro con el nombre de la planta que se carga y las pistas que da el nivel
@@ -449,7 +495,7 @@ private:
         auto cuadro = [&](float cy, bool dibujar) {
             cy = ui.TextoEnvuelto("LLEVAS: " + NombreDe(p.idx), x + PAD, cy, ancho, 3.0f, UI::Verde(), dibujar) + 4.0f;
             if (nivel == 3) {
-                cy = ui.TextoEnvuelto("SIN PISTAS: ¡RECUERDA DÓNDE ESTABA!", x + PAD, cy, ancho, 2.0f, UI::Crema(), dibujar);
+                cy = ui.TextoEnvuelto("SIN PISTAS: BUSCA EL CÍRCULO AZUL QUE LE TOCA", x + PAD, cy, ancho, 2.0f, UI::Crema(), dibujar);
             } else {
                 cy = ui.TextoEnvuelto("ZONA: " + zona, x + PAD, cy, ancho, 2.0f, UI::Crema(), dibujar);
                 if (nivel == 1) {
@@ -458,7 +504,7 @@ private:
                     cy += 21.0f + 10.0f;
                     if (dibujar) ui.Texto(dir, x + PAD, cy, 3.0f, UI::Verde());
                     cy += 21.0f + 10.0f;
-                    cy = ui.TextoEnvuelto("SUÉLTALA DENTRO DEL AURA", x + PAD, cy, ancho, 2.0f, UI::Crema(), dibujar);
+                    cy = ui.TextoEnvuelto("SUÉLTALA EN EL CÍRCULO CREMA", x + PAD, cy, ancho, 2.0f, UI::Crema(), dibujar);
                 }
             }
             return cy;

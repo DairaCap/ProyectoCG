@@ -562,7 +562,7 @@ bool Update()
     }
 
     // Trivia: abre la pantalla de inicio al acercarse al checkpoint y corre el cronómetro mientras se juega
-    if (!pantallaInicio && cpTrivia >= 0)
+    if (!pantallaInicio && cpTrivia >= 0 && !juegoPlantas.Visible())      // La trivia no se abre mientras se juega el de plantas
         trivia.Update(deltaTime, camera.BasePosition, checkpoints.lista[cpTrivia].pos, checkpoints.lista[cpTrivia].radioInteraccion);
 
     // Minijuego de plantas: se mueve la planta que se carga y se calculan las auras del cuadro
@@ -572,6 +572,7 @@ bool Update()
         juegoPlantas.bloqueado = trivia.Visible();
         juegoPlantas.Update(deltaTime, camera.BasePosition, camera.Front, camera.BasePosition.y - camera.eyeHeight, cajasMundo,
                             checkpoints.lista[cpPlantas].pos, checkpoints.lista[cpPlantas].radioInteraccion);
+        juegoPlantas.Apuntar(camera.GetEyePosition(), camera.Front);
         juegoPlantas.ObtenerAuras(listaAuras);
     }
 
@@ -710,7 +711,7 @@ void processInput(GLFWwindow* window)
     else keyHPressed = false;
 
     // Trivia: lee A, B, C, ENTER, E y R. Durante el juego estas teclas contestan en vez de mover al jugador.
-    bool teclaEConsumida = trivia.ProcesarTeclas(window, !pantallaInicio);
+    bool teclaEConsumida = trivia.ProcesarTeclas(window, !pantallaInicio && !juegoPlantas.Visible());
     if (!trivia.Visible()) teclaEConsumida |= juegoPlantas.ProcesarTeclas(window, !pantallaInicio);   // Plantas: 1, 2, 3, ENTER, E, R
     else juegoPlantas.ProcesarTeclas(window, false);
     if (pantallaInicio) { camera.isMoving = false; return; }
@@ -757,10 +758,14 @@ void processInput(GLFWwindow* window)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         if (pantallaInicio) MostrarPantallaInicio(false);     // Clic para iniciar el recorrido
-        else if (!trivia.Activa() && !juegoPlantas.Visible()) InteractWithHovered();     // Mientras se juega el clic no hace nada
+        else if (juegoPlantas.Jugando()) {
+            // Jugando: si la mira apunta a una planta del juego, el clic la agarra; si no, abre puertas, ventanas, etc.
+            if (!juegoPlantas.Clic(true, camera.GetEyePosition(), camera.Front)) InteractWithHovered();
+        }
+        else if (!trivia.Activa() && !juegoPlantas.Visible()) InteractWithHovered();     // Con un popup abierto el clic no hace nada
     }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && !pantallaInicio && (action == GLFW_PRESS || action == GLFW_RELEASE))
-        juegoPlantas.Clic(action == GLFW_PRESS, camera.GetEyePosition(), camera.Front);    // Mantener el clic agarra una planta; soltarlo la deja
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && !pantallaInicio)
+        juegoPlantas.Clic(false, camera.GetEyePosition(), camera.Front);                  // Soltar el clic deja la planta
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
