@@ -9,7 +9,7 @@
 //   JUGANDO  -> 8 plantas al azar se teletransportan al patio. Se agarran MANTENIENDO el clic izquierdo
 //               (la planta flota frente a la mira) y se sueltan al dejar el clic. ENTER califica:
 //               aura verde = bien colocada, roja = mal. Las rojas se pueden volver a agarrar.
-//   FINAL    -> cuando TODAS estan en verde: tiempo y numero de calificaciones.
+//   FINAL    -> cuando TODAS estan en verde: nivel y tiempo (ya no se muestra el numero de calificaciones).
 //
 // Niveles (pistas al agarrar una planta):
 //   En todos los niveles se ven los circulos (auras) de los 8 lugares correctos.
@@ -530,7 +530,7 @@ private:
 
     void DibujarFinal(UI& ui) {
         float x = ui.W - PW - MARGEN;
-        float alto = PAD + 28.0f + 18.0f + 28.0f + 10.0f + 28.0f + 10.0f + 28.0f + 18.0f + 21.0f + 14.0f + 14.0f + PAD;
+        float alto = PAD + 28.0f + 18.0f + 28.0f + 10.0f + 28.0f + 18.0f + 21.0f + 14.0f + 14.0f + PAD;
         float y = (ui.H - alto) * 0.5f;
         ui.Panel(x, y, PW, alto);
         float cy = y + PAD;
@@ -539,10 +539,6 @@ private:
         ui.TextoCentrado(std::string("NIVEL: ") + NombreNivel(nivel), x, PW, cy, 4.0f, UI::Crema());
         cy += 28.0f + 10.0f;
         ui.TextoCentrado("TIEMPO: " + Formato(tiempoFinal), x, PW, cy, 4.0f, UI::Crema());
-        cy += 28.0f + 10.0f;
-        char buf[48];
-        snprintf(buf, sizeof(buf), "CALIFICACIONES: %d", calificaciones);
-        ui.TextoCentrado(buf, x, PW, cy, 4.0f, UI::Crema());
         cy += 28.0f + 18.0f;
         ui.TextoCentrado(calificaciones <= 1 ? "¡A LA PRIMERA! ERES EXPERTO" : "¡BIEN HECHO! SIGUE PRACTICANDO", x, PW, cy, 3.0f, UI::Verde());
         cy += 21.0f + 14.0f;
