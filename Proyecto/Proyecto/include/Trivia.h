@@ -45,6 +45,21 @@ public:
         "Cuándo cambiar de maceta", "Luz para plantas de interior", "Señales de poca luz"
     };
 
+    // Por que la respuesta correcta es esa (se muestra en la pantalla de resultado, acierte o no).
+    // La fuente solo tiene mayusculas, tildes, ñ y los signos . , : ! ? - / ( )
+    static inline const char* const EXPLICACION[TOTAL] = {
+        "LOS CACTUS GUARDAN AGUA EN SUS TALLOS Y AGUANTAN LA SEQUÍA. CON REGARLOS CADA 2 O 3 SEMANAS BASTA, MÁS AGUA PUEDE PUDRIRLOS.",
+        "SI LA TIERRA QUEDA ENCHARCADA, LAS RAÍCES NO RECIBEN AIRE Y SE PUDREN. POR ESO LAS HOJAS SE AMARILLAN Y LA PLANTA SE MARCHITA.",
+        "CON LA LUZ DEL SOL LA PLANTA FABRICA SU ALIMENTO: CONVIERTE AGUA Y DIÓXIDO DE CARBONO EN AZÚCARES. SIN LUZ NO HAY FOTOSÍNTESIS.",
+        "LAS PLANTAS TOMAN DIÓXIDO DE CARBONO DEL AIRE POR SUS HOJAS Y LO USAN PARA HACER AZÚCARES. COMO RESULTADO SUELTAN OXÍGENO.",
+        "LOS AGUJEROS DEJAN SALIR EL EXCESO DE AGUA. ASÍ LA TIERRA NO SE ENCHARCA Y LAS RAÍCES NO SE PUDREN.",
+        "EN LA MAÑANA HACE MENOS CALOR, ASÍ QUE EL AGUA NO SE EVAPORA TAN RÁPIDO Y LA PLANTA PUEDE ABSORBERLA. AL MEDIODÍA SE DESPERDICIA.",
+        "EL ALOE VERA ALMACENA AGUA EN SUS HOJAS GRUESAS Y CARNOSAS. POR ESO AGUANTA VARIOS DÍAS SIN RIEGO.",
+        "SI SALEN RAÍCES POR LOS AGUJEROS DE ABAJO, YA NO CABEN EN LA MACETA. NECESITA UNA MÁS GRANDE PARA SEGUIR CRECIENDO.",
+        "LA LUZ INDIRECTA BRILLANTE LES DA ENERGÍA A LAS PLANTAS DE INTERIOR SIN QUEMAR SUS HOJAS, COMO PUEDE HACERLO EL SOL DIRECTO.",
+        "CON POCA LUZ LA PLANTA PRODUCE MENOS CLOROFILA, EL PIGMENTO VERDE. POR ESO SUS HOJAS SE VEN PÁLIDAS O AMARILLENTAS."
+    };
+
     Estado estado = CERRADA;
 
     // carpetaRecursos = carpeta "minijuegos" ya resuelta por main.cpp
@@ -235,6 +250,10 @@ private:
         float anchoImg = PW - 2 * PAD, altoImg = anchoImg * 9.0f / 16.0f;          // Las imagenes son 16:9
         float altoPanel = PAD + 21.0f + 14.0f + altoImg + 12.0f + 21.0f + 6.0f + 14.0f + PAD;
         if (conRespuesta) altoPanel += 35.0f + 14.0f;                              // Renglon extra con el letrero
+        const float anchoExp = PW - 2 * PAD;
+        float altoExp = 0.0f;                                                      // Bloque de retroalimentacion (solo en la respuesta)
+        if (conRespuesta) altoExp = 14.0f + 8.0f + ui.TextoEnvuelto(EXPLICACION[orden[actual]], 0.0f, 0.0f, anchoExp, 2.0f, UI::Crema(), false) + 4.0f;
+        altoPanel += altoExp;
         float y = (ui.H - altoPanel) * 0.5f;
         ui.Panel(x, y, PW, altoPanel);
         float cy = y + PAD;
@@ -267,8 +286,13 @@ private:
         } else {
             snprintf(buf, sizeof(buf), "TU RESPUESTA: %c", elegidas[actual]);
             ui.TextoCentrado(buf, x, PW, cy, 3.0f, UI::Crema());
+            cy += 21.0f + 6.0f;
+            snprintf(buf, sizeof(buf), "POR QUÉ LA CORRECTA ES %c:", CORRECTA[orden[actual]]);   // Retroalimentacion
+            ui.Texto(buf, x + PAD, cy, 2.0f, UI::Verde());
+            cy += 14.0f + 8.0f;
+            cy = ui.TextoEnvuelto(EXPLICACION[orden[actual]], x + PAD, cy, anchoExp, 2.0f, UI::Crema()) + 4.0f;
             ui.TextoCentrado(actual + 1 >= POR_JUEGO ? "ENTER: VER MI MARCADOR" : "ENTER: SIGUIENTE PREGUNTA",
-                             x, PW, cy + 21.0f + 6.0f, 2.0f, UI::Verde());
+                             x, PW, cy, 2.0f, UI::Verde());
         }
     }
 
