@@ -85,6 +85,7 @@ Shader* cubemapShader = nullptr;
 Shader* crosshairShader = nullptr;
 Shader* tarjetaShader = nullptr;        // Tarjetas informativas de plantas
 Model* casaModel = nullptr;
+Model* cercaModel = nullptr;           // Cerca de madera alrededor de la casa (muebles/cerca/Cerca.fbx)
 Model* characterModel = nullptr;
 Muebles muebles;                       // Muebles, plantas y objetos de Romero (carpeta muebles/)
 CubeMap* mainCubeMap = nullptr;
@@ -386,6 +387,13 @@ bool Start()
 
     casaModel = new Model(houseModelPath, true);
 
+    // Cerca alrededor de la casa: mismas coordenadas que la casa, va en el origen sin mover (carpeta muebles/cerca)
+    std::string cercaPath = "muebles/cerca/Cerca.fbx";
+    FILE* fCerca = fopen(cercaPath.c_str(), "rb");
+    if (fCerca) { fclose(fCerca); }
+    else { cercaPath = "../muebles/cerca/Cerca.fbx"; }
+    cercaModel = new Model(cercaPath, true);                 // true = FBX con Z arriba, igual que la casa y los muebles
+
     // Muebles, plantas y objetos (carpeta muebles/ junto al ejecutable o un nivel arriba)
     if (!muebles.Cargar("muebles")) muebles.Cargar("../muebles");
     texInicio = muebles.CargarTextura("muebles/pantalla_inicio.png");
@@ -633,6 +641,7 @@ bool Update()
         mainShader->setVec4("spotLightColor", glm::vec4(1.0f, 0.98f, 0.88f, 1.0f));
 
         if (casaModel) casaModel->Draw(*mainShader);
+        if (cercaModel) cercaModel->Draw(*mainShader);    // Cerca de la casa
         muebles.Draw(*mainShader);                 // Muebles, plantas y objetos con sus animaciones
 
         for (size_t s = 0; s < gSwitches.size(); ++s) {
